@@ -1,0 +1,32 @@
+name: sayur_in
+description: Aplikasi Mobile Sayur.in - Marketplace Produk Segar
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  provider: ^6.0.5
+  dio: ^5.6.0
+  shared_preferences: ^2.3.2
+  intl: ^0.19.0
+  google_sign_in: ^6.2.1   # <-- Google login berhasil
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - D:\flutter\sayurin\lib\assets\images
+    - D:\flutter\sayurin\lib\assets\icons
+    - assets/images/Dolokfresh.png
+    - assets/icons/google.png
