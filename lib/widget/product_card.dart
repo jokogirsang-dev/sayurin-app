@@ -38,10 +38,12 @@ class ProductCard extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12.0),
                 ),
-                child: produk.image.isNotEmpty
-                    ? Image.network(produk.image, fit: BoxFit.cover)
-                    : Image.asset('assets/images/sayurin.png',
-                        fit: BoxFit.cover),
+                child: produk.gambar.isNotEmpty
+                    ? Image.network(produk.gambar, fit: BoxFit.cover)
+                    : Image.asset(
+                        'assets/images/sayurin.png',
+                        fit: BoxFit.cover,
+                      ),
               ),
             ),
             Padding(
@@ -50,18 +52,20 @@ class ProductCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    produk.name,
+                    produk.nama,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4.0),
-                  // ✅ Format harga (int → String)
+
+                  // Harga: int → double via produk.harga
                   Text(
-                    'Rp ${FormatCurrency.toRupiah(produk.price)}',
+                    'Rp ${FormatCurrency.toRupiah(produk.harga)}',
                     style: const TextStyle(color: Colors.green),
                   ),
                   const SizedBox(height: 6.0),
+
                   ElevatedButton.icon(
                     icon: const Icon(Icons.add_shopping_cart, size: 16.0),
                     label: const Text('Tambah'),

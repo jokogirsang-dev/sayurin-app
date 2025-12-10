@@ -135,7 +135,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   title: Text(p.name),
                   subtitle: Text(
                     // kalau FormatCurrency.toRupiah sudah ada "Rp", hapus "Rp " di depan
-                    'Rp ${FormatCurrency.toRupiah(p.price)}',
+                    'Rp ${FormatCurrency.toRupiah(p.harga)}',
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, size: 20.0),
