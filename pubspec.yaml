@@ -26,7 +26,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - D:\flutter\sayurin\lib\assets\images
-    - D:\flutter\sayurin\lib\assets\icons
-    - assets/images/Dolokfresh.png
-    - assets/icons/google.png
+    - lib/assets/images/
+    - lib/assets/icons/
+
