@@ -107,7 +107,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             labelText: 'Metode Pembayaran',
                             border: OutlineInputBorder(),
                           ),
-                          initialValue: _metodePembayaran,
+                          value: _metodePembayaran,
                           items: const [
                             DropdownMenuItem(
                               value: 'COD',
