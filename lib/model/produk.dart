@@ -2,50 +2,50 @@
 
 class Produk {
   final String id;
-  final String name;
-  final double price;
-  final String image;
+  final String nama;
+  final double harga;
+  final String gambar;
   final int stok;
   final String kategori;
-  final String description; // opsional, dari API bisa kosong
+  int jumlah;
+
+  // Getter alias untuk kompatibilitas
+  String get name => nama;
+  String get image => gambar;
+  double get price => harga;
+  String get description => "Deskripsi produk $nama"; // Anda bisa ubah ini sesuai kebutuhan
 
   Produk({
     required this.id,
-    required this.name,
-    required this.price,
-    required this.image,
+    required this.nama,
+    required this.harga,
+    required this.gambar,
     required this.stok,
     required this.kategori,
-    required this.description,
+    this.jumlah = 1,
   });
 
   factory Produk.fromJson(Map<String, dynamic> json) {
     return Produk(
-      id: json['id'].toString(), // MockAPI kirim id string
-      name: json['name'] as String? ?? '',
-      price: (json['price'] as num).toDouble(),
-      image: json['image'] as String? ?? '',
-      stok: (json['stok'] as num?)?.toInt() ?? 0,
-      kategori: json['kategori'] as String? ?? '',
-      description: json['description'] as String? ?? '',
+      id: json['id'] as String,
+      nama: json['nama'] as String,
+      harga: json['harga'] is int ? (json['harga'] as int).toDouble() : (json['harga'] as double),
+      gambar: json['gambar'] as String,
+      stok: json['stok'] as int,
+      kategori: json['kategori'] as String,
+      jumlah: 1,
     );
   }
 
-  
-
-  // Compatibility getters (Indonesian names used in UI)
-  String get nama => name;
-  double get harga => price;
-  String get gambar => image;
-Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'price': price,
-      'image': image,
-      'stok': stok,
-      'kategori': kategori,
-      'description': description,
-    };
+  Produk copyWith({int? jumlah}) {
+    return Produk(
+      id: id,
+      nama: nama,
+      harga: harga,
+      gambar: gambar,
+      stok: stok,
+      kategori: kategori,
+      jumlah: jumlah ?? this.jumlah,
+    );
   }
 }
