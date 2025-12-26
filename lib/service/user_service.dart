@@ -9,14 +9,14 @@ class UserService {
   }) async {
     await Future.delayed(const Duration(seconds: 1));
 
-    if (email == 'admin@sayur.in' && password == '12345') {
+    if (email == 'admin@hortasima.com' && password == '12345') {
       return User(
         id: 1,
-        name: 'Admin Sayur',
+        name: 'Admin hortasima',
         email: email,
         role: 'admin',
       );
-    } else if (email == 'user@sayur.in' && password == '12345') {
+    } else if (email == 'Jokog@gmail.com' && password == '12345') {
       return User(
         id: 2,
         name: 'Pembeli Sayur',

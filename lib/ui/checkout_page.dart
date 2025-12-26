@@ -3,240 +3,198 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
-import '../helpers/format_currency.dart';
-import '../ui/payment_page.dart'; // ✅ Tambahkan import ini
+import '../providers/pesanan_provider.dart';
 
-class CheckoutPage extends StatelessWidget {
+class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final cart = Provider.of<CartProvider>(context);
+  State<CheckoutPage> createState() => _CheckoutPageState();
+}
 
-    // Simulasikan biaya tambahan (ongkir, asuransi)
-    final double ongkir = 15000.0;
-    final double asuransi = 2000.0;
-    final double totalHarga = cart.getTotal();
-    final double totalBelanja = totalHarga + ongkir + asuransi;
+class _CheckoutPageState extends State<CheckoutPage> {
+  final _addrCtl = TextEditingController();
+  String _kurir = 'JNE';
+  String _payment = 'COD';
+  bool _loading = false;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5FAF2), // Hijau muda lembut
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFF5FAF2),
-        iconTheme: const IconThemeData(color: Colors.black87),
-        title: const Text(
-          'Checkout',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: Column(
-        children: [
-          // --- Daftar Barang ---
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const Text(
-                  'Daftar Barang',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...cart.items.map((item) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Gambar Produk
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: _buildImage(item.gambar),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Detail Produk
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.nama,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Rp ${FormatCurrency.toRupiah(item.harga)} x ${item.jumlah}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Subtotal
-                        Text(
-                          'Rp ${FormatCurrency.toRupiah(item.harga * item.jumlah)}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
-          ),
-
-          // --- Ringkasan Belanja ---
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(color: Colors.grey.shade300),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Ringkasan Belanja',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildSummaryRow('Total Harga', totalHarga),
-                _buildSummaryRow('Ongkos Kirim', ongkir),
-                _buildSummaryRow('Asuransi Pengiriman', asuransi),
-                const Divider(height: 24, thickness: 1, color: Colors.grey),
-                _buildSummaryRow(
-                  'Total Belanja',
-                  totalBelanja,
-                  isTotal: true,
-                ),
-                const SizedBox(height: 24),
-
-                // Tombol Bayar
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // ✅ Perbaikan: Gunakan nama class PaymentPage, bukan nama file
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const PaymentPage()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[700],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      'Bayar Sekarang',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  @override
+  void dispose() {
+    _addrCtl.dispose();
+    super.dispose();
   }
 
-  Widget _buildImage(String url) {
-    if (url.startsWith('http')) {
-      return Image.network(
-        url,
-        width: 60,
-        height: 60,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            width: 60,
-            height: 60,
-            color: Colors.grey[200],
-            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) =>
-            Container(width: 60, height: 60, color: Colors.grey[300], child: const Icon(Icons.error)),
+  Future<void> _placeOrder(BuildContext context) async {
+    final cartProv = Provider.of<CartProvider>(context, listen: false);
+    final pesananProv = Provider.of<PesananProvider>(context, listen: false);
+    if (_addrCtl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Isi alamat pengiriman')));
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      // Panggil tambahPesanan dengan items dari cart
+      final items = cartProv.items;
+      final total = cartProv.getTotal();
+
+      pesananProv.tambahPesanan(
+        items: items,
+        totalHarga: total,
       );
-    } else {
-      return Image.asset(
-        url.isNotEmpty ? url : 'assets/images/sayurin.png',
-        width: 60,
-        height: 60,
-        fit: BoxFit.cover,
+
+      // Clear cart setelah order berhasil
+      cartProv.clear();
+
+      // sukses
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Pesanan Berhasil'),
+          content: const Text('Pesanan Anda telah dibuat. Terima kasih!'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
+              child: const Text('OK'),
+            )
+          ],
+        ),
       );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal membuat pesanan. Coba lagi.')));
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  Widget _buildSummaryRow(String label, double value, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? Colors.black87 : Colors.grey[700],
+  @override
+  Widget build(BuildContext context) {
+    final cartProv = Provider.of<CartProvider>(context);
+    final total = cartProv.getTotal();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Checkout'),
+        backgroundColor: const Color(0xFF2E7D32),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              controller: _addrCtl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Alamat Pengiriman',
+                border: OutlineInputBorder(),
+                hintText: 'Nama, Jalan, Desa, Kode Pos, No. HP',
+              ),
             ),
-          ),
-          Text(
-            'Rp ${FormatCurrency.toRupiah(value)}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? Colors.green : Colors.grey[700],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Expanded(
+                    child: Text('Pilih Kurir',
+                        style: TextStyle(fontWeight: FontWeight.w700))),
+                DropdownButton<String>(
+                  value: _kurir,
+                  items: ['JNE', 'J&T', 'POS', 'GrabExpress']
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _kurir = v ?? 'JNE'),
+                )
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Expanded(
+                    child: Text('Metode Pembayaran',
+                        style: TextStyle(fontWeight: FontWeight.w700))),
+                DropdownButton<String>(
+                  value: _payment,
+                  items: ['COD', 'Transfer Bank', 'Midtrans']
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _payment = v ?? 'COD'),
+                )
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.03), blurRadius: 8)
+                  ]),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Ringkasan Pesanan',
+                      style: TextStyle(fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Text('Subtotal'),
+                      const Spacer(),
+                      Text('Rp ${total.toStringAsFixed(0)}',
+                          style: const TextStyle(fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Text('Ongkos Kirim'),
+                      const Spacer(),
+                      Text('Rp 0',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: Colors.grey[700])),
+                    ],
+                  ),
+                  const Divider(height: 18),
+                  Row(
+                    children: [
+                      const Text('Total',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w900)),
+                      const Spacer(),
+                      Text('Rp ${total.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF2E7D32))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _loading ? null : () => _placeOrder(context),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7D32)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: _loading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Bayar / Place Order',
+                          style: TextStyle(fontSize: 16)),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

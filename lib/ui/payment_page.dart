@@ -3,16 +3,46 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/pesanan_provider.dart';
 import '../helpers/format_currency.dart';
 
-class PaymentPage extends StatelessWidget {
+class PaymentPage extends StatefulWidget {
   const PaymentPage({super.key});
+
+  @override
+  State<PaymentPage> createState() => _PaymentPageState();
+}
+
+class _PaymentPageState extends State<PaymentPage> {
+  String? selectedPayment;
+  bool isProcessing = false;
+
+  final List<Map<String, dynamic>> paymentMethods = [
+    {
+      'id': 'transfer',
+      'name': 'Transfer Bank',
+      'icon': Icons.account_balance,
+      'description': 'BCA, Mandiri, BNI, BRI'
+    },
+    {
+      'id': 'ewallet',
+      'name': 'E-Wallet',
+      'icon': Icons.account_balance_wallet,
+      'description': 'GoPay, OVO, Dana, ShopeePay'
+    },
+    {
+      'id': 'cod',
+      'name': 'Bayar di Tempat (COD)',
+      'icon': Icons.money,
+      'description': 'Bayar saat barang tiba'
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
-
-    // Simulasikan biaya tambahan
+    
+    // ✅ Ensure all values are double
     final double ongkir = 15000.0;
     final double asuransi = 2000.0;
     final double totalHarga = cart.getTotal();
@@ -25,28 +55,19 @@ class PaymentPage extends StatelessWidget {
         backgroundColor: const Color(0xFFF5FAF2),
         iconTheme: const IconThemeData(color: Colors.black87),
         title: const Text(
-          'Pembayaran',
+          'Metode Pembayaran',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
         ),
       ),
       body: Column(
         children: [
-          // --- Detail Pesanan ---
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const Text(
-                  'Detail Pesanan',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 12),
+                // Total Pembayaran Card
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -62,23 +83,31 @@ class PaymentPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSummaryRow('Total Harga', totalHarga),
-                      _buildSummaryRow('Ongkos Kirim', ongkir),
-                      _buildSummaryRow('Asuransi Pengiriman', asuransi),
-                      const Divider(height: 24, thickness: 1, color: Colors.grey),
-                      _buildSummaryRow(
-                        'Total Belanja',
-                        totalBelanja,
-                        isTotal: true,
+                      const Text(
+                        'Total Pembayaran',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Rp ${FormatCurrency.toRupiah(totalBelanja)}',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[700],
+                        ),
                       ),
                     ],
                   ),
                 ),
+
                 const SizedBox(height: 24),
 
-                // --- Metode Pembayaran ---
+                // Pilih Metode Pembayaran
                 const Text(
-                  'Metode Pembayaran',
+                  'Pilih Metode Pembayaran',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -86,12 +115,97 @@ class PaymentPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ..._buildPaymentMethods(context),
+
+                // Payment Method Cards
+                ...paymentMethods.map((method) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          selectedPayment = method['id'];
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: selectedPayment == method['id']
+                                ? Colors.green[700]!
+                                : Colors.grey[300]!,
+                            width: selectedPayment == method['id'] ? 2 : 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.green[50],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                method['icon'],
+                                color: Colors.green[700],
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    method['name'],
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    method['description'],
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Radio<String>(
+                              value: method['id'],
+                              groupValue: selectedPayment,
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedPayment = value;
+                                });
+                              },
+                              activeColor: Colors.green[700],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ],
             ),
           ),
 
-          // --- Footer Tombol Bayar ---
+          // Bottom Button
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -100,62 +214,38 @@ class PaymentPage extends StatelessWidget {
                 top: BorderSide(color: Colors.grey.shade300),
               ),
             ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total Bayar:',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    Text(
-                      'Rp ${FormatCurrency.toRupiah(totalBelanja)}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Simulasikan pembayaran berhasil
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Pembayaran Berhasil!')),
-                      );
-                      // Kosongkan keranjang
-                      cart.clear();
-                      // Kembali ke halaman utama atau tampilkan halaman "Pesanan Berhasil"
-                      Navigator.popUntil(context, ModalRoute.withName('/'));
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[700],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      'Konfirmasi Pembayaran',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+            child: SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: selectedPayment == null || isProcessing
+                    ? null
+                    : () => _processPayment(context, cart, totalBelanja),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[700],
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey[300],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-              ],
+                child: isProcessing
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Konfirmasi Pembayaran',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
             ),
           ),
         ],
@@ -163,87 +253,103 @@ class PaymentPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryRow(String label, double value, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? Colors.black87 : Colors.grey[700],
-            ),
-          ),
-          Text(
-            'Rp ${FormatCurrency.toRupiah(value)}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? Colors.green : Colors.grey[700],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildPaymentMethods(BuildContext context) {
-    return [
-      _buildPaymentMethodCard(
-        context,
-        'QRIS',
-        'Bayar dengan QR Code dari aplikasi dompet digital Anda',
-        Icons.qr_code,
-      ),
-      _buildPaymentMethodCard(
-        context,
-        'Transfer Bank',
-        'Transfer ke rekening bank kami',
-        Icons.account_balance,
-      ),
-      _buildPaymentMethodCard(
-        context,
-        'Kartu Kredit/Debit',
-        'Bayar dengan kartu kredit atau debit Anda',
-        Icons.credit_card,
-      ),
-      _buildPaymentMethodCard(
-        context,
-        'Cash on Delivery (COD)',
-        'Bayar saat barang sampai di rumah Anda',
-        Icons.money,
-      ),
-    ];
-  }
-
-  Widget _buildPaymentMethodCard(
+  Future<void> _processPayment(
     BuildContext context,
-    String title,
-    String subtitle,
-    IconData icon,
-  ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.green),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: Radio<bool>(
-          value: false,
-          groupValue: false,
-          onChanged: (bool? value) {
-            // Di sini Anda bisa menambahkan logika untuk memilih metode pembayaran
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Metode pembayaran $title dipilih')),
-            );
-          },
+    CartProvider cart,
+    double totalBelanja,
+  ) async {
+    setState(() {
+      isProcessing = true;
+    });
+
+    // Simulasi proses pembayaran
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    // ✅ Ambil PesananProvider
+    final pesananProvider = Provider.of<PesananProvider>(context, listen: false);
+
+    // ✅ Tambahkan pesanan baru dengan data dari cart
+    pesananProvider.tambahPesanan(
+      items: cart.items,
+      totalHarga: totalBelanja,  // ✅ Sudah double
+    );
+
+    // ✅ Kosongkan cart setelah checkout berhasil
+    cart.clear();
+
+    setState(() {
+      isProcessing = false;
+    });
+
+    if (!mounted) return;
+
+    // Tampilkan dialog sukses
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle,
+                color: Colors.green[700],
+                size: 64,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Pembayaran Berhasil!',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Pesanan Anda sedang diproses',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Pop dialog
+              Navigator.pop(context);
+              // Pop payment page
+              Navigator.pop(context);
+              // Pop checkout page
+              Navigator.pop(context);
+              
+              // Tampilkan snackbar
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Cek pesanan Anda di menu "Pesanan"'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            },
+            child: const Text('Lihat Pesanan'),
+          ),
+        ],
       ),
     );
   }

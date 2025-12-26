@@ -75,7 +75,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                          'Produk "$name" disimpan (simulasi, belum ke API).'),
+                          'Produk "$name" (Rp$price) dengan gambar "$image" disimpan (simulasi, belum ke API).'),
                     ),
                   );
                   Navigator.pop(context);

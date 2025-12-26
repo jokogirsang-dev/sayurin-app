@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+// =======================
+// PROVIDERS
+// =======================
 import 'providers/cart_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/produk_provider.dart';
 import 'providers/pesanan_provider.dart';
 
+// =======================
+// UI PAGES
+// =======================
+import 'ui/welcome_page.dart';
 import 'ui/splash_screen.dart';
 import 'ui/login_page.dart';
 import 'ui/register_page.dart';
 import 'ui/home_page.dart';
-import 'ui/pesanan_page.dart';
 import 'ui/produk_page.dart';
+import 'ui/pesanan_page.dart';
 import 'ui/profile_page.dart';
 import 'ui/about_page.dart';
 
@@ -25,28 +32,45 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => CartProvider()),
+        // =======================
+        // GLOBAL PROVIDERS
+        // =======================
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => ProdukProvider()),
         ChangeNotifierProvider(create: (_) => PesananProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Sayur.in',
+
+        // =======================
+        // THEME
+        // =======================
         theme: ThemeData(
           useMaterial3: true,
           colorSchemeSeed: Colors.green,
+          scaffoldBackgroundColor: const Color(0xFFF5F5F5),
         ),
-        initialRoute: '/splash',
+
+        // =======================
+        // INITIAL ROUTE
+        // =======================
+        initialRoute: '/',
+
+        // =======================
+        // ROUTES
+        // =======================
         routes: {
-          '/splash': (_) => const SplashScreen(),
-          '/login': (_) => const LoginPage(),
-          '/register': (_) => const RegisterPage(),
-          '/home': (_) => const HomePage(),
-          '/produk': (_) => const ProdukPage(),
-          '/pesanan': (_) => const PesananPage(),
-          '/profil': (_) => const ProfilePage(),
-          '/about': (_) => const AboutPage(),
+          '/': (context) => const WelcomePage(),
+          '/splash': (context) => const SplashScreen(),
+          '/login': (context) => const LoginPage(),
+          '/register': (context) => const RegisterPage(),
+          '/home': (context) => const HomePage(),
+          '/produk': (context) => const ProdukPage(),
+          '/pesanan': (context) => const PesananPage(),
+          '/profil': (context) => const ProfilePage(),
+          '/about': (context) => const AboutPage(),
         },
       ),
     );
