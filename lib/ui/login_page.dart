@@ -64,8 +64,12 @@ class _LoginPageState extends State<LoginPage>
           ),
         );
 
-        // Navigate to home
-        Navigator.pushReplacementNamed(context, '/home');
+        // ✅ Navigate ke admin atau home berdasarkan role
+        if (isAdmin) {
+          Navigator.pushReplacementNamed(context, '/admin');
+        } else {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

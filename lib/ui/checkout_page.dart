@@ -47,6 +47,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
       // Clear cart setelah order berhasil
       cartProv.clear();
 
+      // ✅ DEBUG: Show success with order details
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '✅ Pesanan Berhasil! ID: ${DateTime.now().millisecondsSinceEpoch}'),
+          duration: const Duration(seconds: 3),
+          backgroundColor: Colors.green,
+        ),
+      );
+
       // sukses
       if (!mounted) return;
       showDialog(

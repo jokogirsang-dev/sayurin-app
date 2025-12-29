@@ -8,6 +8,7 @@ import 'providers/cart_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/produk_provider.dart';
 import 'providers/pesanan_provider.dart';
+import 'providers/admin_provider.dart';
 
 // =======================
 // UI PAGES
@@ -21,10 +22,12 @@ import 'ui/produk_page.dart';
 import 'ui/pesanan_page.dart';
 import 'ui/profile_page.dart';
 import 'ui/about_page.dart';
+import 'ui/admin_dashboard.dart';
 
 void main() {
   runApp(const MyApp());
 }
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -39,6 +42,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => ProdukProvider()),
         ChangeNotifierProvider(create: (_) => PesananProvider()),
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -71,6 +75,7 @@ class MyApp extends StatelessWidget {
           '/pesanan': (context) => const PesananPage(),
           '/profil': (context) => const ProfilePage(),
           '/about': (context) => const AboutPage(),
+          '/admin': (context) => const AdminDashboard(),
         },
       ),
     );
