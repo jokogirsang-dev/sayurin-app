@@ -1,9 +1,8 @@
-// lib/ui/register_page.dart
-// ✅ FINAL VERSION - NO ERRORS - READY TO USE
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
+import '../widget/custom_buttons.dart';
+import '../widget/custom_text_fields.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -277,44 +276,47 @@ class _RegisterPageState extends State<RegisterPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           const Text(
             'Daftar Akun',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
               color: Color(0xFF1B5E20),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             'Buat akun baru untuk mulai belanja sayur segar',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 14,
               color: Colors.grey[600],
             ),
           ),
           const SizedBox(height: 24),
-          
-          _buildTextField(
-            controller: _nameC,
+          CustomTextField(
             label: 'Nama Lengkap',
-            icon: Icons.person_outline,
+            hintText: 'Masukkan nama lengkap Anda',
+            controller: _nameC,
+            prefixIcon: Icons.person_outline,
+            textInputAction: TextInputAction.next,
             validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Nama lengkap wajib diisi';
+              if (v == null || v.trim().isEmpty)
+                return 'Nama lengkap wajib diisi';
               if (v.trim().length < 3) return 'Nama minimal 3 karakter';
               return null;
             },
           ),
           const SizedBox(height: 16),
-          
-          _buildTextField(
-            controller: _emailC,
+          CustomTextField(
             label: 'Email',
-            icon: Icons.email_outlined,
+            hintText: 'Masukkan email Anda',
+            controller: _emailC,
             keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email_outlined,
+            textInputAction: TextInputAction.next,
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Email wajib diisi';
               if (!v.contains('@')) return 'Format email tidak valid';
@@ -322,12 +324,13 @@ class _RegisterPageState extends State<RegisterPage>
             },
           ),
           const SizedBox(height: 16),
-          
-          _buildTextField(
-            controller: _phoneC,
+          CustomTextField(
             label: 'Nomor HP / WhatsApp',
-            icon: Icons.phone_outlined,
+            hintText: 'Masukkan nomor HP Anda',
+            controller: _phoneC,
             keyboardType: TextInputType.phone,
+            prefixIcon: Icons.phone_outlined,
+            textInputAction: TextInputAction.next,
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Nomor HP wajib diisi';
               if (v.trim().length < 10) return 'Nomor HP minimal 10 digit';
@@ -335,12 +338,18 @@ class _RegisterPageState extends State<RegisterPage>
             },
           ),
           const SizedBox(height: 16),
-          
-          _buildPasswordField(
-            controller: _passwordC,
+          CustomTextField(
             label: 'Password',
-            obscure: _obscurePassword,
-            onToggle: () => setState(() => _obscurePassword = !_obscurePassword),
+            hintText: 'Masukkan password Anda',
+            controller: _passwordC,
+            obscureText: _obscurePassword,
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
+            onSuffixIconTapped: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
+            textInputAction: TextInputAction.next,
             validator: (v) {
               if (v == null || v.isEmpty) return 'Password wajib diisi';
               if (v.length < 6) return 'Password minimal 6 karakter';
@@ -348,23 +357,27 @@ class _RegisterPageState extends State<RegisterPage>
             },
           ),
           const SizedBox(height: 16),
-          
-          _buildPasswordField(
-            controller: _confirmPasswordC,
+          CustomTextField(
             label: 'Konfirmasi Password',
-            obscure: _obscureConfirmPassword,
-            onToggle: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-            iconColor: const Color(0xFFFF6F00),
+            hintText: 'Konfirmasi password Anda',
+            controller: _confirmPasswordC,
+            obscureText: _obscureConfirmPassword,
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: _obscureConfirmPassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
+            onSuffixIconTapped: () => setState(
+                () => _obscureConfirmPassword = !_obscureConfirmPassword),
+            textInputAction: TextInputAction.done,
             validator: (v) {
-              if (v == null || v.isEmpty) return 'Konfirmasi password wajib diisi';
+              if (v == null || v.isEmpty)
+                return 'Konfirmasi password wajib diisi';
               if (v != _passwordC.text) return 'Password tidak cocok';
               return null;
             },
           ),
           const SizedBox(height: 16),
-          
           _buildTermsCheckbox(),
-          
           if (_error != null) ...[
             const SizedBox(height: 12),
             Container(
@@ -376,114 +389,49 @@ class _RegisterPageState extends State<RegisterPage>
               ),
               child: Text(
                 _error!,
-                style: const TextStyle(color: Colors.red, fontSize: 12),
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
           ],
-          
+          const SizedBox(height: 24),
+          PrimaryButton(
+            text: 'Daftar',
+            onPressed: _doRegister,
+            isLoading: _loading,
+            height: 52,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Sudah punya akun? ',
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+                child: const Text(
+                  'Masuk',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 20),
-          
-          _buildRegisterButton(),
-          const SizedBox(height: 20),
-          
-          _buildLoginLink(),
-          const SizedBox(height: 20),
-          
           _buildDivider(),
           const SizedBox(height: 16),
-          
           _buildSocialButtons(),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
         ],
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      style: const TextStyle(fontSize: 14),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-        prefixIcon: Icon(icon, size: 20, color: const Color(0xFF2E7D32)),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!, width: 1.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
-        ),
-      ),
-      validator: validator,
-    );
-  }
-
-  Widget _buildPasswordField({
-    required TextEditingController controller,
-    required String label,
-    required bool obscure,
-    required VoidCallback onToggle,
-    Color iconColor = const Color(0xFF2E7D32),
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscure,
-      style: const TextStyle(fontSize: 14),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-        prefixIcon: Icon(Icons.lock_outline, size: 20, color: iconColor),
-        suffixIcon: IconButton(
-          icon: Icon(
-            obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-            size: 20,
-            color: Colors.grey[600],
-          ),
-          onPressed: onToggle,
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!, width: 1.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: iconColor, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
-        ),
-      ),
-      validator: validator,
     );
   }
 
@@ -498,7 +446,8 @@ class _RegisterPageState extends State<RegisterPage>
             value: _agreeTerms,
             onChanged: (value) => setState(() => _agreeTerms = value ?? false),
             activeColor: const Color(0xFF2E7D32),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
           ),
         ),
         const SizedBox(width: 8),
@@ -507,82 +456,25 @@ class _RegisterPageState extends State<RegisterPage>
             onTap: () => setState(() => _agreeTerms = !_agreeTerms),
             child: RichText(
               text: TextSpan(
-                style: TextStyle(fontSize: 12, color: Colors.grey[700], height: 1.4),
+                style: TextStyle(
+                    fontSize: 12, color: Colors.grey[700], height: 1.4),
                 children: const [
                   TextSpan(text: 'Dengan mendaftar, Anda menyetujui '),
                   TextSpan(
                     text: 'Syarat & Ketentuan',
-                    style: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        color: Color(0xFF2E7D32), fontWeight: FontWeight.w700),
                   ),
                   TextSpan(text: ' serta '),
                   TextSpan(
                     text: 'Kebijakan Privasi',
-                    style: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        color: Color(0xFF2E7D32), fontWeight: FontWeight.w700),
                   ),
                   TextSpan(text: ' HORTASIMA FRESH'),
                 ],
               ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRegisterButton() {
-    return SizedBox(
-      height: 50,
-      child: ElevatedButton(
-        onPressed: _loading ? null : _doRegister,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: EdgeInsets.zero,
-        ),
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF2E7D32), Color(0xFF43A047)],
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Container(
-            alignment: Alignment.center,
-            child: _loading
-                ? const SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation(Colors.white),
-                    ),
-                  )
-                : const Text(
-                    'Daftar',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoginLink() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('Sudah punya akun? ', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
-        GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, '/login'),
-          child: const Text(
-            'Masuk',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),
           ),
         ),
       ],
@@ -597,7 +489,10 @@ class _RegisterPageState extends State<RegisterPage>
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
           child: Text(
             'atau daftar dengan',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
+            style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500),
           ),
         ),
         Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
@@ -656,7 +551,8 @@ class _RegisterPageState extends State<RegisterPage>
         child: Center(
           child: Text(
             icon,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: textColor),
+            style: TextStyle(
+                fontSize: 24, fontWeight: FontWeight.w700, color: textColor),
           ),
         ),
       ),

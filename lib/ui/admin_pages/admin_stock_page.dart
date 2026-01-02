@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/produk_provider.dart';
 import '../../helpers/format_currency.dart';
+import '../../widget/custom_app_bar.dart';
 
 class AdminStockPage extends StatefulWidget {
   const AdminStockPage({super.key});
@@ -17,9 +18,11 @@ class _AdminStockPageState extends State<AdminStockPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manajemen Stok'),
-        elevation: 0,
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: CustomAppBar(
+        title: 'Manajemen Stok',
+        backgroundColor: const Color(0xFF1565C0),
+        titleColor: Colors.white,
       ),
       body: Consumer2<AdminProvider, ProdukProvider>(
         builder: (context, adminProv, produkProv, _) {

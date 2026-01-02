@@ -4,6 +4,7 @@ import '../../providers/admin_provider.dart';
 import '../../providers/pesanan_provider.dart';
 import '../../providers/produk_provider.dart';
 import '../../helpers/format_currency.dart';
+import '../../widget/custom_app_bar.dart';
 
 class AdminAnalyticsPage extends StatefulWidget {
   const AdminAnalyticsPage({super.key});
@@ -16,9 +17,11 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Analytics & Insights'),
-        elevation: 0,
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: CustomAppBar(
+        title: 'Analytics & Insights',
+        backgroundColor: const Color(0xFF1565C0),
+        titleColor: Colors.white,
       ),
       body: Consumer3<AdminProvider, PesananProvider, ProdukProvider>(
         builder: (context, adminProv, pesananProv, produkProv, _) {

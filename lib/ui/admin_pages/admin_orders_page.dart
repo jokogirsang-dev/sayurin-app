@@ -4,6 +4,7 @@ import '../../providers/admin_provider.dart';
 import '../../providers/pesanan_provider.dart';
 import '../../model/pesanan.dart';
 import '../../helpers/format_currency.dart';
+import '../../widget/custom_app_bar.dart';
 
 class AdminOrdersPage extends StatefulWidget {
   const AdminOrdersPage({super.key});
@@ -18,9 +19,11 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manajemen Pesanan'),
-        elevation: 0,
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: CustomAppBar(
+        title: 'Manajemen Pesanan',
+        backgroundColor: const Color(0xFF1565C0),
+        titleColor: Colors.white,
       ),
       body: Consumer2<AdminProvider, PesananProvider>(
         builder: (context, adminProv, pesananProv, _) {

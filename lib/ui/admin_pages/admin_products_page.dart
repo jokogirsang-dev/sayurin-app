@@ -4,6 +4,7 @@ import '../../providers/admin_provider.dart';
 import '../../providers/produk_provider.dart';
 import '../../model/produk.dart';
 import '../../helpers/format_currency.dart';
+import '../../widget/custom_app_bar.dart';
 
 class AdminProductsPage extends StatefulWidget {
   const AdminProductsPage({super.key});
@@ -18,9 +19,11 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manajemen Produk'),
-        elevation: 0,
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: CustomAppBar(
+        title: 'Manajemen Produk',
+        backgroundColor: const Color(0xFF1565C0),
+        titleColor: Colors.white,
       ),
       body: Consumer2<AdminProvider, ProdukProvider>(
         builder: (context, adminProv, produkProv, _) {

@@ -26,7 +26,8 @@ class PesananProvider extends ChangeNotifier {
       tanggal: DateTime.now(),
       items: pesananItems, // ✅ Gunakan PesananItem, bukan Produk
       totalHarga: totalHarga,
-      status: 'pending', // ✅ FIXED: Use 'pending' not 'Diproses'
+      status:
+          'Diproses', // ✅ Sesuai dengan tab: Diproses, Dikemas, Dikirim, Selesai
     );
 
     _pesanan.insert(0, pesananBaru); // Masuk paling atas (terbaru)
@@ -76,7 +77,7 @@ class PesananProvider extends ChangeNotifier {
               ),
             ],
             totalHarga: 10000,
-            status: 'completed',
+            status: 'Selesai',
           ),
           Pesanan(
             id: 'ORD-002',
@@ -92,7 +93,7 @@ class PesananProvider extends ChangeNotifier {
               ),
             ],
             totalHarga: 24000,
-            status: 'pending',
+            status: 'Diproses',
           ),
         ]);
       }

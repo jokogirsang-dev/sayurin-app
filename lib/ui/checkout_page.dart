@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/pesanan_provider.dart';
+import '../widget/custom_app_bar.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -67,9 +68,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.pushReplacementNamed(context, '/pesanan');
               },
-              child: const Text('OK'),
+              child: const Text('Lihat Pesanan'),
             )
           ],
         ),
@@ -88,9 +90,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final total = cartProv.getTotal();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Checkout'),
-        backgroundColor: const Color(0xFF2E7D32),
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: CustomAppBar(
+        title: 'Checkout',
+        backgroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

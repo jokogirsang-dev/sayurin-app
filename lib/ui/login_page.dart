@@ -1,8 +1,8 @@
-// lib/ui/login_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
+import '../widget/custom_buttons.dart';
+import '../widget/custom_text_fields.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -261,59 +261,35 @@ class _LoginPageState extends State<LoginPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           const Text(
             'Masuk',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
               color: Color(0xFF1B5E20),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             'Masuk untuk mulai belanja sayur segar',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 14,
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
 
           // Email Field
-          TextFormField(
+          CustomTextField(
+            label: 'Email',
+            hintText: 'Masukkan email Anda',
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            style: const TextStyle(fontSize: 14),
-            decoration: InputDecoration(
-              labelText: 'Email',
-              labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-              prefixIcon: const Icon(Icons.email_outlined,
-                  size: 20, color: Color(0xFF2E7D32)),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!, width: 1.5),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: Color(0xFF2E7D32), width: 2),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 1.5),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 2),
-              ),
-            ),
+            prefixIcon: Icons.email_outlined,
+            textInputAction: TextInputAction.next,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Email tidak boleh kosong';
@@ -327,48 +303,18 @@ class _LoginPageState extends State<LoginPage>
           const SizedBox(height: 16),
 
           // Password Field
-          TextFormField(
+          CustomTextField(
+            label: 'Password',
+            hintText: 'Masukkan password Anda',
             controller: _passwordController,
             obscureText: _obscurePassword,
-            style: const TextStyle(fontSize: 14),
-            decoration: InputDecoration(
-              labelText: 'Password',
-              labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-              prefixIcon: const Icon(Icons.lock_outline,
-                  size: 20, color: Color(0xFF2E7D32)),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  size: 20,
-                  color: Colors.grey[600],
-                ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!, width: 1.5),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: Color(0xFF2E7D32), width: 2),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 1.5),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 2),
-              ),
-            ),
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
+            onSuffixIconTapped: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
+            textInputAction: TextInputAction.done,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Password tidak boleh kosong';
@@ -377,8 +323,7 @@ class _LoginPageState extends State<LoginPage>
             },
           ),
 
-          // ✅ Demo Accounts - HIDDEN but accessible via long press
-          const SizedBox(height: 8),
+          // Demo Accounts - HIDDEN but accessible via long press
           GestureDetector(
             onLongPress: () {
               setState(() => _showDemoAccounts = !_showDemoAccounts);
@@ -431,51 +376,16 @@ class _LoginPageState extends State<LoginPage>
             ),
           ],
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
 
           // Login Button
-          SizedBox(
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _handleLogin,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: EdgeInsets.zero,
-              ),
-              child: Ink(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF2E7D32), Color(0xFF43A047)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Container(
-                  alignment: Alignment.center,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          'Masuk',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                ),
-              ),
-            ),
+          PrimaryButton(
+            text: 'Masuk',
+            onPressed: _handleLogin,
+            isLoading: _isLoading,
+            height: 52,
           ),
+
           const SizedBox(height: 16),
 
           // Register Link
@@ -484,7 +394,7 @@ class _LoginPageState extends State<LoginPage>
             children: [
               Text(
                 'Belum punya akun? ',
-                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
               GestureDetector(
                 onTap: () =>
@@ -492,15 +402,15 @@ class _LoginPageState extends State<LoginPage>
                 child: const Text(
                   'Daftar',
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                     color: Color(0xFF2E7D32),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
         ],
       ),
     );
