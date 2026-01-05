@@ -20,80 +20,30 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'Manajemen Pesanan',
-        backgroundColor: const Color(0xFF1565C0),
+        backgroundColor: Color(0xFF1565C0),
         titleColor: Colors.white,
       ),
-      body: Consumer2<AdminProvider, PesananProvider>(
-        builder: (context, adminProv, pesananProv, _) {
+      body: Consumer<PesananProvider>(
+        builder: (context, pesananProv, _) {
           final orders = _filterStatus.isEmpty
-              ? pesananProv.semuaPesanan
-              : pesananProv.semuaPesanan
-                  .where((o) =>
-                      o.status.toLowerCase() == _filterStatus.toLowerCase())
-                  .toList();
+              ? (pesananProv.semuaPesanan ?? []) // Null safety
+              : (pesananProv.semuaPesanan ?? []).where((o) => o.status == _filterStatus).toList();
 
-          // ✅ DEBUG: Show total orders count
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (pesananProv.semuaPesanan.isNotEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                      '📊 Total Pesanan: ${pesananProv.semuaPesanan.length} | Filtered: ${orders.length}'),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }
-          });
+          if (orders.isEmpty) {
+            return const Center(child: Text('Tidak ada pesanan'));
+          }
 
           return Column(
             children: [
-              // === FILTER BUTTONS ===
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    _buildFilterButton(
-                      label: 'Semua',
-                      selected: _filterStatus.isEmpty,
-                      onTap: () => setState(() => _filterStatus = ''),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildFilterButton(
-                      label: 'Pending',
-                      selected: _filterStatus == 'pending',
-                      onTap: () => setState(() => _filterStatus = 'pending'),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildFilterButton(
-                      label: 'Completed',
-                      selected: _filterStatus == 'completed',
-                      onTap: () => setState(() => _filterStatus = 'completed'),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildFilterButton(
-                      label: 'Cancelled',
-                      selected: _filterStatus == 'cancelled',
-                      onTap: () => setState(() => _filterStatus = 'cancelled'),
-                    ),
-                  ],
-                ),
-              ),
-
-              // === ORDERS LIST ===
+              _buildFilterBar(),
               Expanded(
-                child: orders.isEmpty
-                    ? const Center(child: Text('Tidak ada pesanan'))
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        itemCount: orders.length,
-                        itemBuilder: (context, index) {
-                          final order = orders[index];
-                          return _buildOrderCard(context, order, adminProv);
-                        },
-                      ),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: orders.length,
+                  itemBuilder: (_, i) => _buildOrderCard(context, orders[i]),
+                ),
               ),
             ],
           );
@@ -102,24 +52,43 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     );
   }
 
-  Widget _buildFilterButton({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return ElevatedButton(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: selected ? Colors.green : Colors.grey[300],
-        foregroundColor: selected ? Colors.white : Colors.black,
+  // ================= FILTER =================
+
+  Widget _buildFilterBar() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          _filterBtn('Semua', ''),
+          _filterBtn('Diproses', 'Diproses'),
+          _filterBtn('Dikemas', 'Dikemas'),
+          _filterBtn('Dikirim', 'Dikirim'),
+          _filterBtn('Selesai', 'Selesai'),
+        ],
       ),
-      child: Text(label),
     );
   }
 
-  Widget _buildOrderCard(
-      BuildContext context, Pesanan order, AdminProvider adminProv) {
-    final statusColor = _getStatusColor(order.status);
+  Widget _filterBtn(String label, String value) {
+    final selected = _filterStatus == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ElevatedButton(
+        onPressed: () => setState(() => _filterStatus = value),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: selected ? Colors.green : Colors.grey[300],
+          foregroundColor: selected ? Colors.white : Colors.black,
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+
+  // ================= CARD =================
+
+  Widget _buildOrderCard(BuildContext context, Pesanan order) {
+    final statusColor = _statusColor(order.status);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -128,7 +97,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // === HEADER ===
+            // HEADER
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -138,60 +107,40 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                     Text(
                       'Order #${order.id}',
                       style: const TextStyle(
-                        fontSize: 14,
                         fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _formatDate(order.tanggal),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    order.status.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
+                _statusBadge(order.status, statusColor),
               ],
             ),
+
             const SizedBox(height: 12),
 
-            // === ITEMS INFO ===
-            Text(
-              'Items (${order.items.length}):',
-              style: const TextStyle(
+            // ITEMS
+            const Text(
+              'Item',
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: Colors.grey,
               ),
             ),
             const SizedBox(height: 6),
-            ...order.items.take(3).map((item) {
-              return Text(
-                '• ${item.nama} x${item.jumlah} - Rp ${FormatCurrency.toRupiah(item.subtotal)}',
-                style: const TextStyle(fontSize: 11),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              );
-            }).toList(),
+
+            ...order.items.take(3).map((item) => Text(
+                  '• ${item.namaProduk} x${item.jumlah} - Rp ${FormatCurrency.toRupiah(item.harga * item.jumlah)}',
+                  style: const TextStyle(fontSize: 11),
+                  overflow: TextOverflow.ellipsis,
+                )),
+
             if (order.items.length > 3)
               Text(
                 '+ ${order.items.length - 3} item lainnya',
@@ -201,57 +150,31 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+
             const SizedBox(height: 12),
 
-            // === TOTAL & ACTION ===
+            // TOTAL & ACTION
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Total',
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                    Text(
-                      'Rp ${FormatCurrency.toRupiah(order.totalHarga)}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
+                Text(
+                  'Total: Rp ${FormatCurrency.toRupiah(order.totalHarga)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
                 ),
                 Row(
                   children: [
-                    OutlinedButton.icon(
-                      onPressed: () => _showOrderDetails(context, order),
-                      icon: const Icon(Icons.visibility, size: 16),
-                      label: const Text('Detail'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
+                    OutlinedButton(
+                      onPressed: () => _showDetail(context, order),
+                      child: const Text('Detail'),
                     ),
                     const SizedBox(width: 8),
-                    if (order.status != 'completed')
-                      ElevatedButton.icon(
-                        onPressed: () =>
-                            _showStatusChangeDialog(context, order, adminProv),
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Update'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          backgroundColor: Colors.blue,
-                        ),
-                      ),
+                    ElevatedButton(
+                      onPressed: () => _showUpdateStatus(context, order),
+                      child: const Text('Update'),
+                    ),
                   ],
                 ),
               ],
@@ -262,130 +185,132 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     );
   }
 
-  Color _getStatusColor(String status) {
+  // ================= DIALOG =================
+
+  void _showDetail(BuildContext context, Pesanan order) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Order #${order.id}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Tanggal: ${_formatDate(order.tanggal)}'),
+              Text('Status: ${order.status}'),
+              const SizedBox(height: 12),
+              const Text(
+                'Items:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...order.items.map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '• ${item.namaProduk} x${item.jumlah} Rp ${FormatCurrency.toRupiah(item.harga * item.jumlah)}',
+                    ),
+                  )),
+              const Divider(height: 24),
+              Text(
+                'Total: Rp ${FormatCurrency.toRupiah(order.totalHarga)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUpdateStatus(BuildContext context, Pesanan order) {
+    final adminProv = Provider.of<AdminProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Ubah Status'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _statusOption(adminProv, order, 'Diproses'),
+            _statusOption(adminProv, order, 'Dikemas'),
+            _statusOption(adminProv, order, 'Dikirim'),
+            _statusOption(adminProv, order, 'Selesai'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statusOption(
+      AdminProvider prov, Pesanan order, String status) {
+    return ListTile(
+      title: Text(status),
+      leading: Icon(
+        Icons.circle,
+        color: _statusColor(status),
+        size: 12,
+      ),
+      onTap: () {
+        prov.updateStatus(order.id, status);
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Status order #${order.id} diubah ke $status'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+    );
+  }
+
+  // ================= UTIL =================
+
+  Widget _statusBadge(String status, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15), // Fix deprecated
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Color _statusColor(String status) {
     switch (status) {
-      case 'pending':
+      case 'Diproses':
+        return Colors.blue;
+      case 'Dikemas':
+        return Colors.purple;
+      case 'Dikirim':
         return Colors.orange;
-      case 'completed':
+      case 'Selesai':
         return Colors.green;
-      case 'cancelled':
-        return Colors.red;
       default:
         return Colors.grey;
     }
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
-
-  void _showOrderDetails(BuildContext context, Pesanan order) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Detail Order #${order.id}'),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Tanggal: ${_formatDate(order.tanggal)}'),
-                const SizedBox(height: 8),
-                Text('Status: ${order.status}'),
-                const SizedBox(height: 12),
-                const Text(
-                  'Items:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                ...order.items.map((item) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${item.nama} x${item.jumlah}',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          'Rp ${FormatCurrency.toRupiah(item.subtotal)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                const Divider(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'Rp ${FormatCurrency.toRupiah(order.totalHarga)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Tutup'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showStatusChangeDialog(
-      BuildContext context, Pesanan order, AdminProvider adminProv) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Ubah Status Pesanan'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: const Text('Pending'),
-                onTap: () async {
-                  await adminProv.updateOrderStatus(order.id, 'pending');
-                  if (context.mounted) Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: const Text('Completed'),
-                onTap: () async {
-                  await adminProv.updateOrderStatus(order.id, 'completed');
-                  if (context.mounted) Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: const Text('Cancelled'),
-                onTap: () async {
-                  await adminProv.updateOrderStatus(order.id, 'cancelled');
-                  if (context.mounted) Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  String _formatDate(DateTime d) {
+    return '${d.day}/${d.month}/${d.year} ${d.hour}:${d.minute.toString().padLeft(2, '0')}';
   }
 }

@@ -65,7 +65,7 @@ class _PesananPageState extends State<PesananPage>
           Expanded(
             child: Consumer<PesananProvider>(
               builder: (context, provider, _) {
-                final allPesanan = provider.semuaPesanan ?? [];
+                final allPesanan = provider.semuaPesanan;
 
                 if (allPesanan.isEmpty) {
                   return _buildEmpty();
@@ -122,7 +122,7 @@ class _PesananPageState extends State<PesananPage>
   // ===================== CARD =====================
 
   Widget _buildPesananCard(Pesanan pesanan) {
-    final items = pesanan.items ?? []; // 🔴 FIX UTAMA (NULL SAFE)
+    final items = pesanan.items;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -154,7 +154,7 @@ class _PesananPageState extends State<PesananPage>
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        '${item.nama} (${item.jumlah}x)',
+                        '${item.namaProduk} (${item.jumlah}x)',
                         style: const TextStyle(fontSize: 13),
                       ),
                     ),
@@ -264,7 +264,7 @@ class _PesananPageState extends State<PesananPage>
 
   // ===================== LOGIC =====================
 
-  void _updateStatus(BuildContext context, String id, String status) {
+  void _updateStatus(BuildContext context, int id, String status) {
     Provider.of<PesananProvider>(context, listen: false)
         .updateStatus(id, status);
 

@@ -19,7 +19,6 @@ class ProdukPage extends StatefulWidget {
 class _ProdukPageState extends State<ProdukPage> {
   late Future<List<Produk>> _futureProduk;
   String selectedCategory = 'Semua';
-  Set<String> favoriteIds = {}; // Untuk menyimpan produk favorit
 
   @override
   void initState() {
@@ -291,7 +290,8 @@ class _ProdukPageState extends State<ProdukPage> {
                   itemCount: data.length,
                   itemBuilder: (context, index) {
                     final p = data[index];
-                    final isFavorite = favoriteIds.contains(p.id);
+                    // Menggunakan provider untuk status favorit
+                    final isFavorite = cartProv.isFavorite(p.id);
                     final isLocal = _isLocalProduct(p);
                     final rating = _getRating(p);
                     final satuan = _getSatuan(p);
@@ -301,7 +301,7 @@ class _ProdukPageState extends State<ProdukPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ProdukDetailPage(produk: p),
+                            builder: (context) => ProdukDetailPage(produkId: p.id),
                           ),
                         );
                       },
@@ -424,38 +424,26 @@ class _ProdukPageState extends State<ProdukPage> {
                                   right: 8,
                                   child: GestureDetector(
                                     onTap: () {
-                                      setState(() {
-                                        if (isFavorite) {
-                                          favoriteIds.remove(p.id);
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                  '${p.nama} dihapus dari favorit'),
-                                              backgroundColor: Colors.grey[700],
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              duration:
-                                                  const Duration(seconds: 1),
-                                            ),
-                                          );
-                                        } else {
-                                          favoriteIds.add(p.id);
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                  '${p.nama} ditambahkan ke favorit'),
-                                              backgroundColor:
-                                                  const Color(0xFFFF6F00),
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              duration:
-                                                  const Duration(seconds: 1),
-                                            ),
-                                          );
-                                        }
-                                      });
+                                      // Menggunakan provider untuk mengubah state
+                                      cartProv.toggleFavorite(p.id);
+
+                                      // Menampilkan SnackBar tanpa setState
+                                      final isNowFavorite =
+                                          cartProv.isFavorite(p.id);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(isNowFavorite
+                                              ? '${p.nama} ditambahkan ke favorit'
+                                              : '${p.nama} dihapus dari favorit'),
+                                          backgroundColor: isNowFavorite
+                                              ? const Color(0xFFFF6F00)
+                                              : Colors.grey[700],
+                                          behavior: SnackBarBehavior.floating,
+                                          duration:
+                                              const Duration(seconds: 1),
+                                        ),
+                                      );
                                     },
                                     child: Container(
                                       padding: const EdgeInsets.all(6),

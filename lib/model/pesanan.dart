@@ -1,14 +1,16 @@
 // lib/model/pesanan.dart
 
 class Pesanan {
-  final String id; // 🔴 ID sebaiknya String (aman utk API)
+  final int id;
+  final int userId; // Ditambahkan
   final double totalHarga;
   final DateTime tanggal;
   final String status;
-  final List<PesananItem> items; // 🔴 WAJIB ADA (dipakai di UI)
+  final List<PesananItem> items;
 
   Pesanan({
     required this.id,
+    required this.userId, // Ditambahkan
     required this.totalHarga,
     required this.tanggal,
     required this.status,
@@ -17,7 +19,8 @@ class Pesanan {
 
   factory Pesanan.fromJson(Map<String, dynamic> json) {
     return Pesanan(
-      id: json['id']?.toString() ?? '',
+      id: json['id']??'',
+      userId: json['user_id'] ?? '',
       totalHarga: (json['total_harga'] ?? 0).toDouble(),
       tanggal: DateTime.tryParse(json['tanggal'] ?? '') ?? DateTime.now(),
       status: json['status'] ?? 'UNKNOWN',
@@ -25,7 +28,26 @@ class Pesanan {
           ? (json['items'] as List)
               .map((e) => PesananItem.fromJson(e))
               .toList()
-          : [], // 🔥 FIX UTAMA (ANTI NULL)
+          : [],
+    );
+  }
+
+  // Metode copyWith yang hilang, sekarang ditambahkan
+  Pesanan copyWith({
+    int? id,
+    int? userId,
+    double? totalHarga,
+    DateTime? tanggal,
+    String? status,
+    List<PesananItem>? items,
+  }) {
+    return Pesanan(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      totalHarga: totalHarga ?? this.totalHarga,
+      tanggal: tanggal ?? this.tanggal,
+      status: status ?? this.status,
+      items: items ?? this.items,
     );
   }
 }
@@ -35,13 +57,15 @@ class Pesanan {
 // =======================================================
 
 class PesananItem {
-  final String nama;
+  final int produkId; // Ditambahkan
+  final String namaProduk; // Diganti dari 'nama'
   final int jumlah;
   final double harga;
   final String gambar;
 
   PesananItem({
-    required this.nama,
+    required this.produkId, // Ditambahkan
+    required this.namaProduk, // Diganti dari 'nama'
     required this.jumlah,
     required this.harga,
     required this.gambar,
@@ -49,7 +73,8 @@ class PesananItem {
 
   factory PesananItem.fromJson(Map<String, dynamic> json) {
     return PesananItem(
-      nama: json['nama'] ?? '',
+      produkId: json['produk_id'] ?? 0, // Ditambahkan
+      namaProduk: json['nama_produk'] ?? json['nama'] ?? '', // Diperbarui
       jumlah: json['jumlah'] ?? 0,
       harga: (json['harga'] ?? 0).toDouble(),
       gambar: json['gambar'] ?? '',

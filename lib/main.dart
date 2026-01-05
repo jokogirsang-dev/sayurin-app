@@ -36,13 +36,19 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // =======================
-        // GLOBAL PROVIDERS
+        // GLOBAL PROVIDERS - Urutkan dependencies dulu
         // =======================
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => ProdukProvider()),
         ChangeNotifierProvider(create: (_) => PesananProvider()),
-        ChangeNotifierProvider(create: (_) => AdminProvider()),
+        // AdminProvider depend pada Produk & Pesanan, jadi dibuat terakhir
+        ChangeNotifierProvider<AdminProvider>(
+          create: (context) => AdminProvider(
+            produkProvider: Provider.of<ProdukProvider>(context, listen: false),
+            pesananProvider: Provider.of<PesananProvider>(context, listen: false),
+          ),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

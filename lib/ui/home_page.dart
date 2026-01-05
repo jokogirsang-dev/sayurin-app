@@ -8,6 +8,7 @@ import '../model/produk.dart';
 import 'produk_page.dart';
 import 'produk_detail_page.dart';
 import 'cart_page.dart';
+import 'profile_page.dart';
 import '../widget/sidebar.dart';
 
 class HomePage extends StatefulWidget {
@@ -359,8 +360,8 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 2),
                 Row(
-                  children: const [
-                    Text(
+                  children: [
+                    const Text(
                       'Purba Dolok, Simalungun, Sumatera Utara',
                       style: TextStyle(
                         fontSize: 14,
@@ -368,8 +369,8 @@ class _HomePageState extends State<HomePage> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(width: 4),
-                    Icon(
+                    const SizedBox(width: 4),
+                    const Icon(
                       Icons.keyboard_arrow_down,
                       size: 16,
                       color: Color(0xFF1B5E20),
@@ -627,9 +628,7 @@ class _HomePageState extends State<HomePage> {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
-                            foregroundColor: banner['colors'] != null
-                                ? (banner['colors'] as List<Color>)[0]
-                                : Colors.green,
+                            foregroundColor: (banner['colors'] as List<Color>?)?.first ?? Colors.green,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -806,8 +805,8 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     '🔥 Panen Pagi Ini',
                     style: TextStyle(
                       fontSize: 16,
@@ -815,8 +814,8 @@ class _HomePageState extends State<HomePage> {
                       color: Colors.white,
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
+                  const SizedBox(height: 4),
+                  const Text(
                     'Diskon hingga 50% • Berakhir dalam 3 jam',
                     style: TextStyle(
                       fontSize: 12,
@@ -949,7 +948,7 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ProdukDetailPage(produk: p)),
+        MaterialPageRoute(builder: (_) => ProdukDetailPage(produkId: p.id)),
       ),
       child: Container(
         width: 170,
@@ -1319,7 +1318,7 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ProdukDetailPage(produk: p)),
+        MaterialPageRoute(builder: (_) => ProdukDetailPage(produkId: p.id)),
       ),
       child: Container(
         width: 170,
@@ -1645,7 +1644,7 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ProdukDetailPage(produk: p)),
+        MaterialPageRoute(builder: (_) => ProdukDetailPage(produkId: p.id)),
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -1883,21 +1882,45 @@ class _HomePageState extends State<HomePage> {
       child: BottomNavigationBar(
         currentIndex: _currentNavIndex,
         onTap: (index) {
-          setState(() {
-            _currentNavIndex = index;
-          });
+          // For Beranda (index 0), just ensure it's selected.
+          if (index == 0) {
+            setState(() {
+              _currentNavIndex = 0;
+            });
+            return;
+          }
 
+          // For other tabs, we navigate.
+          Future<void> future;
           if (index == 1) {
-            Navigator.push(
+            future = Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ProdukPage()),
             );
           } else if (index == 2) {
-            Navigator.push(
+            future = Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const CartPage()),
             );
+          } else if (index == 3) {
+            future = Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
+            );
+          } else {
+            // Should not happen
+            return;
           }
+
+          // After the user returns from the other page,
+          // set the selected tab back to home.
+          future.then((_) {
+            if (mounted) {
+              setState(() {
+                _currentNavIndex = 0;
+              });
+            }
+          });
         },
         selectedItemColor: const Color(0xFF2E7D32),
         unselectedItemColor: Colors.grey[600],

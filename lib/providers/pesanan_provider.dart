@@ -1,157 +1,98 @@
-// lib/providers/pesanan_provider.dart
-
-import 'package:flutter/foundation.dart';
-import '../model/produk.dart';
+import 'package:flutter/material.dart';
 import '../model/pesanan.dart';
+import '../model/produk.dart';
 
-class PesananProvider extends ChangeNotifier {
-  final List<Pesanan> _pesanan = [];
-  bool _loading = false;
+class PesananProvider with ChangeNotifier {
+  List<Pesanan> _semuaPesanan = [];
+  bool _isLoading = false;
 
-  List<Pesanan> get semuaPesanan => List.unmodifiable(_pesanan);
-  bool get loading => _loading;
+  List<Pesanan> get semuaPesanan => _semuaPesanan;
+  bool get isLoading => _isLoading;
 
-  // ✅ Method tambahPesanan - FIXED dengan PesananItem
-  void tambahPesanan({
+  /// ================= FETCH PESANAN =================
+  Future<void> fetchPesanan() async {
+    _isLoading = true;
+    notifyListeners();
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    final List<Map<String, dynamic>> dummyData = [
+      {
+        'id': 1,
+        'user_id': 1,
+        'tanggal': DateTime.now().toIso8601String(),
+        'total_harga': 75000,
+        'status': 'Diproses',
+        'items': [
+          {'produk_id': 1, 'nama_produk': 'Bayam', 'harga': 5000, 'jumlah': 3},
+        ]
+      },
+      {
+        'id': 2,
+        'user_id': 2,
+        'tanggal':
+            DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+        'total_harga': 120000,
+        'status': 'Selesai',
+        'items': [
+          {'produk_id': 2, 'nama_produk': 'Wortel', 'harga': 8000, 'jumlah': 5},
+          {'produk_id': 3, 'nama_produk': 'Kangkung', 'harga': 4000, 'jumlah': 10},
+        ]
+      }
+    ];
+
+    _semuaPesanan =
+        dummyData.map((data) => Pesanan.fromJson(data)).toList();
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  /// ================= TAMBAH PESANAN =================
+  Future<void> tambahPesanan({
+    required int userId, // ✅ ambil dari login
     required List<Produk> items,
     required double totalHarga,
-  }) {
-    // ✅ Convert List<Produk> ke List<PesananItem>
-    final pesananItems = items.map((produk) {
-      return PesananItem.fromProduk(produk);
-    }).toList();
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    final pesananItems = items
+        .map((produk) => PesananItem(
+              produkId: produk.id,
+              namaProduk: produk.nama,
+              harga: produk.harga,
+              jumlah: produk.jumlah,
+              gambar: produk.gambar,
+            ))
+        .toList();
 
     final pesananBaru = Pesanan(
-      id: 'ORD-${DateTime.now().millisecondsSinceEpoch}',
+      id: DateTime.now().millisecondsSinceEpoch, // ✅ INT ID
+      userId: userId, // ✅ INT userId
       tanggal: DateTime.now(),
-      items: pesananItems, // ✅ Gunakan PesananItem, bukan Produk
       totalHarga: totalHarga,
-      status:
-          'Diproses', // ✅ Sesuai dengan tab: Diproses, Dikemas, Dikirim, Selesai
+      status: 'Diproses',
+      items: pesananItems,
     );
 
-    _pesanan.insert(0, pesananBaru); // Masuk paling atas (terbaru)
-    // Debug log: show what order was created
-    try {
-      debugPrint(
-          '[PesananProvider] tambahPesanan(): created order ${pesananBaru.id} with items: ' +
-              pesananBaru.items
-                  .map((i) => '${i.nama} x${i.jumlah}')
-                  .join(', '));
-      debugPrint(
-          '[PesananProvider] totalHarga=${pesananBaru.totalHarga} status=${pesananBaru.status}');
-    } catch (e) {
-      debugPrint('[PesananProvider] tambahPesanan() debug error: $e');
-    }
-
+    _semuaPesanan.insert(0, pesananBaru);
     notifyListeners();
   }
 
-  // Fetch pesanan (simulasi)
-  Future<void> fetchPesanan() async {
-    _loading = true;
+  /// ================= UPDATE STATUS =================
+  Future<void> updateStatus(int orderId, String statusBaru) async {
+    _isLoading = true;
     notifyListeners();
 
-    try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      // Debug log: indicate fetch start and current orders
-      debugPrint(
-          '[PesananProvider] fetchPesanan(): starting - current count=${_pesanan.length}');
+    await Future.delayed(const Duration(milliseconds: 500));
 
-      // Simulasi: generate dummy data jika kosong
-      if (_pesanan.isEmpty) {
-        debugPrint(
-            '[PesananProvider] fetchPesanan(): _pesanan empty - adding dummy orders');
-        _pesanan.addAll([
-          Pesanan(
-            id: 'ORD-001',
-            tanggal: DateTime.now().subtract(const Duration(days: 1)),
-            items: [
-              PesananItem(
-                id: '1',
-                nama: 'Sayur Bayam',
-                harga: 5000,
-                gambar: '',
-                jumlah: 2,
-                kategori: 'Sayuran',
-              ),
-            ],
-            totalHarga: 10000,
-            status: 'Selesai',
-          ),
-          Pesanan(
-            id: 'ORD-002',
-            tanggal: DateTime.now(),
-            items: [
-              PesananItem(
-                id: '2',
-                nama: 'Tomat Merah',
-                harga: 8000,
-                gambar: '',
-                jumlah: 3,
-                kategori: 'Sayuran',
-              ),
-            ],
-            totalHarga: 24000,
-            status: 'Diproses',
-          ),
-        ]);
-      }
-      debugPrint(
-          '[PesananProvider] fetchPesanan(): finished - current count=${_pesanan.length}');
-      _loading = false;
-      notifyListeners();
-    } catch (e) {
-      _loading = false;
-      notifyListeners();
-    }
-  }
-
-  // Update status pesanan
-  void updateStatus(String id, String statusBaru) {
-    final index = _pesanan.indexWhere((p) => p.id == id);
+    final index = _semuaPesanan.indexWhere((p) => p.id == orderId);
     if (index != -1) {
-      _pesanan[index] = _pesanan[index].copyWith(status: statusBaru);
-      notifyListeners();
+      _semuaPesanan[index] =
+          _semuaPesanan[index].copyWith(status: statusBaru);
     }
-  }
 
-  // Hapus pesanan
-  void hapusPesanan(String id) {
-    _pesanan.removeWhere((p) => p.id == id);
-    notifyListeners();
-  }
-
-  // Get pesanan by ID
-  Pesanan? getPesananById(String id) {
-    try {
-      return _pesanan.firstWhere((p) => p.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Get jumlah pesanan per status
-  int getCountByStatus(String status) {
-    return _pesanan.where((p) => p.status == status).length;
-  }
-
-  // Get total semua pesanan
-  double getTotalPendapatan() {
-    return _pesanan.fold(0.0, (sum, p) => sum + p.totalHarga);
-  }
-
-  // Get pesanan berdasarkan status
-  List<Pesanan> getPesananByStatus(String status) {
-    return _pesanan.where((p) => p.status == status).toList();
-  }
-
-  // Get total pesanan
-  int get totalPesanan => _pesanan.length;
-
-  // Clear all pesanan (untuk testing/reset)
-  void clearAllPesanan() {
-    _pesanan.clear();
+    _isLoading = false;
     notifyListeners();
   }
 }

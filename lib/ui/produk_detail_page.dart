@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../model/produk.dart';
 import '../providers/cart_provider.dart';
+import '../providers/produk_provider.dart'; // Import ProdukProvider
 import '../widget/custom_app_bar.dart';
 import '../widget/custom_buttons.dart';
+import 'cart_page.dart';
 
 class ProdukDetailPage extends StatefulWidget {
-  final Produk produk;
-  const ProdukDetailPage({super.key, required this.produk});
+  final int produkId; // Menggunakan ID, bukan objek utuh
+  const ProdukDetailPage({super.key, required this.produkId});
 
   @override
   State<ProdukDetailPage> createState() => _ProdukDetailPageState();
@@ -19,148 +21,178 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
   int _quantity = 1;
   bool _isAddingToCart = false;
 
+  // Helper untuk format angka (e.g., 1200 -> 1.2K)
+  String _formatCompact(int number) {
+    if (number < 1000) {
+      return number.toString();
+    } else if (number < 1000000) {
+      double n = number / 1000.0;
+      return '${n.toStringAsFixed(n.truncateToDouble() == n ? 0 : 1)}K';
+    } else {
+      double n = number / 1000000.0;
+      return '${n.toStringAsFixed(n.truncateToDouble() == n ? 0 : 1)}M';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context, listen: false);
+    // Menggunakan listen: true agar UI bereaksi saat data produk berubah/tersedia
+    final produkProvider = Provider.of<ProdukProvider>(context);
+
+    // Mencari produk di dalam provider menggunakan ID yang diterima
+    Produk? produk;
+    try {
+      // firstWhere akan error jika tidak ada, jadi kita pakai try-catch
+      produk = produkProvider.listProduk.firstWhere((p) => p.id == widget.produkId);
+    } catch (e) {
+      // Jika produk tidak ditemukan (misalnya setelah refresh), produk akan null
+      produk = null;
+    }
+
+    // Jika produk tidak ada, tampilkan halaman error yang informatif
+    if (produk == null) {
+      return Scaffold(
+        appBar: CustomAppBar(title: 'Error', showBackButton: true),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 60),
+              const SizedBox(height: 20),
+              const Text(
+                'Produk Tidak Ditemukan',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 40),
+                child: Text(
+                  'Produk mungkin sedang tidak tersedia atau telah dihapus. Silakan coba lagi nanti.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Coba Lagi'),
+                onPressed: () {
+                  // Memicu refresh data pada provider
+                  Provider.of<ProdukProvider>(context, listen: false).fetchProduk();
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white, 
+                  backgroundColor: const Color(0xFF2E7D32),
+                ),
+              )
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: CustomAppBar(
-        title: widget.produk.name,
-        showBackButton: true,
-      ),
-      body: SingleChildScrollView(
+      body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
-        child: Column(
-          children: [
-            // Product Image
-            _buildProductImage(),
+        slivers: [
+          // AppBar yang bisa collapse dengan gambar produk
+          _buildSliverAppBar(produk),
 
-            // Product Details
-            Padding(
+          // Konten lainnya di bawah app bar
+          SliverToBoxAdapter(
+            child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Product Name & Price
-                  _buildProductHeader(),
+                  _buildProductHeader(produk),
                   const SizedBox(height: 20),
-
-                  // Rating & Reviews
-                  _buildRatingSection(),
+                  _buildRatingSection(produk),
                   const SizedBox(height: 24),
-
-                  // Description
-                  _buildDescriptionSection(),
+                  _buildDescriptionSection(produk),
                   const SizedBox(height: 24),
-
-                  // Quantity Selector
                   _buildQuantitySelector(),
-                  const SizedBox(height: 24),
-
-                  // Add to Cart Button
-                  PrimaryButton(
-                    text: 'Tambah ke Keranjang',
-                    onPressed: () => _addToCart(cart),
-                    isLoading: _isAddingToCart,
-                    height: 56,
-                    icon: Icons.shopping_cart_rounded,
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Continue Shopping Button
-                  SecondaryButton(
-                    text: 'Lanjut Belanja',
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icons.arrow_back_rounded,
-                  ),
-
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 40),
                 ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProductImage() {
-    return Container(
-      color: Colors.white,
-      child: Stack(
-        children: [
-          widget.produk.image.isNotEmpty
-              ? Image.network(
-                  widget.produk.image,
-                  height: 300,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 300,
-                    width: double.infinity,
-                    color: Colors.grey[300],
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.image_not_supported_rounded,
-                      size: 64,
-                      color: Color(0xFFCCCCCC),
-                    ),
-                  ),
-                )
-              : Container(
-                  height: 300,
-                  width: double.infinity,
-                  color: Colors.grey[300],
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.shopping_basket_rounded,
-                    size: 64,
-                    color: Color(0xFF2E7D32),
-                  ),
-                ),
-          Positioned(
-            top: 16,
-            right: 16,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.favorite_border_rounded,
-                  color: Color(0xFFFF6F00),
-                  size: 24,
-                ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Ditambahkan ke favorit'),
-                      backgroundColor: Color(0xFF2E7D32),
-                    ),
-                  );
-                },
               ),
             ),
           ),
         ],
       ),
+      // Bottom bar untuk tombol aksi
+      bottomNavigationBar: _buildBottomActionBar(produk, cart),
     );
   }
 
-  Widget _buildProductHeader() {
+  SliverAppBar _buildSliverAppBar(Produk produk) {
+    return SliverAppBar(
+      expandedHeight: 300,
+      pinned: true,
+      stretch: true,
+      backgroundColor: Colors.white,
+      elevation: 1,
+      leading: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: CircleAvatar(
+          backgroundColor: Colors.white.withOpacity(0.8),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF333333)),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: CircleAvatar(
+            backgroundColor: Colors.white.withOpacity(0.8),
+            child: IconButton(
+              icon: const Icon(Icons.favorite_border_rounded, color: Color(0xFFFF6F00)),
+              onPressed: () {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Ditambahkan ke favorit'),
+                      backgroundColor: Color(0xFF2E7D32),
+                    ),
+                  );
+              },
+            ),
+          ),
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        stretchModes: const [StretchMode.zoomBackground],
+        background: produk.gambar.isNotEmpty
+            ? Image.network(
+                produk.gambar,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildErrorImage(),
+              )
+            : _buildErrorImage(),
+      ),
+    );
+  }
+  
+  Widget _buildErrorImage() {
+    return Container(
+      color: Colors.grey[200],
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.shopping_basket_rounded,
+        size: 64,
+        color: Color(0xFFCCCCCC),
+      ),
+    );
+  }
+  
+  Widget _buildProductHeader(Produk produk) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.produk.name,
+          produk.nama,
           style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w700,
@@ -179,9 +211,9 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
                 color: const Color(0xFFFF6F00),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Text(
-                'PRODUK SEGAR',
-                style: TextStyle(
+              child: Text(
+                produk.kategori.toUpperCase(),
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -192,7 +224,7 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
         ),
         const SizedBox(height: 16),
         Text(
-          'Rp${widget.produk.price.toStringAsFixed(0).replaceAllMapped(
+          'Rp${produk.harga.toStringAsFixed(0).replaceAllMapped(
                 RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
                 (match) => '${match.group(1)}.',
               )}',
@@ -206,7 +238,7 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
     );
   }
 
-  Widget _buildRatingSection() {
+  Widget _buildRatingSection(Produk produk) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -226,29 +258,21 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
           _buildRatingItem(
             icon: Icons.star_rounded,
             label: 'Rating',
-            value: '4.8',
+            value: produk.rating.toStringAsFixed(1), // Data dari model
             color: const Color(0xFFFFB400),
           ),
-          Container(
-            width: 1,
-            height: 50,
-            color: Colors.grey[300],
-          ),
+          Container(width: 1, height: 50, color: Colors.grey[300]),
           _buildRatingItem(
             icon: Icons.shopping_bag_rounded,
             label: 'Terjual',
-            value: '245',
+            value: _formatCompact(produk.terjual), // Data dari model
             color: const Color(0xFF2E7D32),
           ),
-          Container(
-            width: 1,
-            height: 50,
-            color: Colors.grey[300],
-          ),
+          Container(width: 1, height: 50, color: Colors.grey[300]),
           _buildRatingItem(
             icon: Icons.visibility_rounded,
             label: 'Dilihat',
-            value: '1.2K',
+            value: _formatCompact(produk.dilihat), // Data dari model
             color: const Color(0xFF2196F3),
           ),
         ],
@@ -267,60 +291,29 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
       children: [
         Icon(icon, color: color, size: 24),
         const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF333333),
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF999999),
-          ),
-        ),
+        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF333333))),
+        Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF999999))),
       ],
     );
   }
 
-  Widget _buildDescriptionSection() {
+  Widget _buildDescriptionSection(Produk produk) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Deskripsi Produk',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF333333),
-          ),
-        ),
+        const Text('Deskripsi Produk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF333333))),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
           ),
           child: Text(
-            widget.produk.description.isNotEmpty
-                ? widget.produk.description
-                : 'Produk segar pilihan dari petani lokal berkualitas premium.',
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.6,
-              color: Color(0xFF666666),
-            ),
+            // Menggunakan deskripsi dari model
+            produk.deskripsi.isNotEmpty ? produk.deskripsi : 'Produk segar pilihan dari petani lokal berkualitas premium. Dipanen setiap hari untuk menjaga kesegarannya.',
+            style: const TextStyle(fontSize: 14, height: 1.6, color: Color(0xFF666666)),
             textAlign: TextAlign.justify,
           ),
         ),
@@ -330,61 +323,23 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
 
   Widget _buildQuantitySelector() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Jumlah:',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF333333),
-            ),
-          ),
+          const Text('Jumlah', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF333333))),
           Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFDEDEDE)),
-              borderRadius: BorderRadius.circular(8),
-            ),
+            decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.remove_rounded),
-                  iconSize: 20,
-                  onPressed:
-                      _quantity > 1 ? () => setState(() => _quantity--) : null,
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    _quantity.toString(),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add_rounded),
-                  iconSize: 20,
-                  onPressed: () => setState(() => _quantity++),
-                ),
+                IconButton(icon: const Icon(Icons.remove), iconSize: 20, onPressed: _quantity > 1 ? () => setState(() => _quantity--) : null),
+                Text(_quantity.toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF333333))),
+                IconButton(icon: const Icon(Icons.add), iconSize: 20, onPressed: () => setState(() => _quantity++)),
               ],
             ),
           ),
@@ -393,34 +348,48 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
     );
   }
 
-  void _addToCart(CartProvider cart) async {
+  Widget _buildBottomActionBar(Produk produk, CartProvider cart) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -2))],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: PrimaryButton(
+        text: 'Tambah ke Keranjang',
+        onPressed: () => _addToCart(produk, cart),
+        isLoading: _isAddingToCart,
+        height: 56,
+        icon: Icons.shopping_cart_checkout_rounded,
+      ),
+    );
+  }
+
+  void _addToCart(Produk produk, CartProvider cart) async {
     setState(() => _isAddingToCart = true);
+    await Future.delayed(const Duration(milliseconds: 300));
 
-    // Simulate adding to cart
-    await Future.delayed(const Duration(milliseconds: 500));
-
+    // Logika penambahan ke keranjang sudah benar
     for (int i = 0; i < _quantity; i++) {
-      cart.tambah(widget.produk);
+      cart.tambah(produk);
     }
 
     if (!mounted) return;
-
     setState(() => _isAddingToCart = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$_quantity item berhasil ditambahkan ke keranjang'),
+        content: Text('$_quantity "${produk.nama}" ditambahkan ke keranjang'),
         backgroundColor: const Color(0xFF2E7D32),
-        action: SnackBarAction(
-          label: 'Lihat',
-          onPressed: () {
-            // Navigate to cart
-          },
-        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        action: SnackBarAction(label: 'LIHAT', textColor: Colors.white, onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const CartPage()));
+        }),
       ),
     );
 
-    // Reset quantity
     setState(() => _quantity = 1);
   }
 }

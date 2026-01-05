@@ -5,6 +5,8 @@ import '../../providers/pesanan_provider.dart';
 import '../../providers/produk_provider.dart';
 import '../../helpers/format_currency.dart';
 import '../../widget/custom_app_bar.dart';
+import '../../model/pesanan.dart'; // Asumsi
+import '../../model/produk.dart'; // Asumsi
 
 class AdminReportsPage extends StatefulWidget {
   const AdminReportsPage({super.key});
@@ -26,17 +28,14 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
       body: Consumer3<AdminProvider, PesananProvider, ProdukProvider>(
         builder: (context, adminProv, pesananProv, produkProv, _) {
           // Build analytics from real data
-          final orders = pesananProv.semuaPesanan;
+          final orders = pesananProv.semuaPesanan ?? []; // Null safety
           final totalOrders = orders.length;
-          final completedOrders =
-              orders.where((o) => o.status == 'completed').length;
-          final pendingOrders =
-              orders.where((o) => o.status == 'pending').length;
-          final totalRevenue =
-              orders.fold<double>(0, (sum, order) => sum + order.totalHarga);
-          final averageOrderValue =
-              totalOrders > 0 ? totalRevenue / totalOrders : 0.0;
-          final totalProducts = produkProv.produkList.length;
+          final completedOrders = orders.where((o) => o.status == 'completed').length;
+          final pendingOrders = orders.where((o) => o.status == 'pending').length;
+          final totalRevenue = orders.fold<double>(0, (sum, order) => sum + (order.totalHarga ?? 0));
+          final averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0.0;
+          final totalProducts = produkProv.listProduk?.length ?? 0;
+          final lowStockProducts = produkProv.listProduk?.where((p) => p.stok < 5).toList() ?? []; // Tambah
 
           final analytics = {
             'totalOrders': totalOrders,
@@ -45,6 +44,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
             'totalRevenue': totalRevenue,
             'averageOrderValue': averageOrderValue,
             'totalProducts': totalProducts,
+            'lowStockProducts': lowStockProducts, // Tambah
           };
 
           return SingleChildScrollView(
@@ -173,7 +173,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Rp ${FormatCurrency.toRupiah((analytics['totalRevenue'] as num).toDouble())}',
+                                  'Rp ${FormatCurrency.toRupiah((analytics['totalRevenue'] as num?)?.toDouble() ?? 0)}',
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -194,7 +194,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Rp ${FormatCurrency.toRupiah((analytics['averageOrderValue'] as num).toDouble())}',
+                                  'Rp ${FormatCurrency.toRupiah((analytics['averageOrderValue'] as num?)?.toDouble() ?? 0)}',
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -233,12 +233,12 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
-                if ((analytics['lowStockProducts'] as List).isEmpty)
+                if ((analytics['lowStockProducts'] as List<Produk>? ?? []).isEmpty)
                   const Center(
                     child: Text('Semua stok dalam kondisi baik'),
                   )
                 else
-                  ...(analytics['lowStockProducts'] as List)
+                  ...(analytics['lowStockProducts'] as List<Produk>? ?? [])
                       .take(5)
                       .map((product) {
                     return Card(
@@ -273,7 +273,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           gradient: LinearGradient(
-            colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+            colors: [color.withOpacity(0.1), color.withOpacity(0.05)], // Fix deprecated
           ),
         ),
         padding: const EdgeInsets.all(12),
@@ -314,7 +314,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> {
     );
   }
 
-  Widget _buildOrderRow(dynamic order) {
+  Widget _buildOrderRow(Pesanan order) { // Ubah dynamic ke Pesanan
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(

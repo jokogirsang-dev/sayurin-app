@@ -272,6 +272,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
     // ✅ Tambahkan pesanan baru dengan data dari cart
     pesananProvider.tambahPesanan(
+      userId: 1, // TODO: Ganti dengan userId dari sesi login
       items: cart.items,
       totalHarga: totalBelanja,  // ✅ Sudah double
     );

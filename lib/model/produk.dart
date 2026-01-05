@@ -1,19 +1,23 @@
 // lib/model/produk.dart
 
 class Produk {
-  final String id;
+  final int id;
   final String nama;
   final double harga;
   final String gambar;
   final int stok;
   final String kategori;
+  final String deskripsi; // Tambah deskripsi
+  final double rating; // Tambah rating
+  final int terjual; // Tambah jumlah terjual
+  final int dilihat; // Tambah jumlah dilihat
   final int jumlah;
 
   // Alias untuk compatibility dengan API bahasa Inggris
   String get name => nama;
   String get image => gambar;
   double get price => harga;
-  String get description => kategori;
+  String get description => deskripsi; // Arahkan ke deskripsi
 
   Produk({
     required this.id,
@@ -22,21 +26,30 @@ class Produk {
     required this.gambar,
     required this.stok,
     required this.kategori,
+    this.deskripsi = '', // Default value
+    this.rating = 0.0, // Default value
+    this.terjual = 0, // Default value
+    this.dilihat = 0, // Default value
     this.jumlah = 1,
   });
 
   // Factory constructor untuk parsing dari JSON (API)
   factory Produk.fromJson(Map<String, dynamic> json) {
     return Produk(
-      id: json['id']?.toString() ?? '',
+      id: _parseToInt(json['id'] ?? ''),
       nama: json['name']?.toString() ?? json['nama']?.toString() ?? '',
       harga: _parseToDouble(json['price'] ?? json['harga'] ?? 0),
       gambar: json['image']?.toString() ?? json['gambar']?.toString() ?? '',
       stok: _parseToInt(json['stok'] ?? json['stock'] ?? 0),
-      kategori: json['kategori']?.toString() ?? 
-                json['category']?.toString() ?? 
-                json['description']?.toString() ?? 
-                'Umum',
+      kategori: json['kategori']?.toString() ??
+          json['category']?.toString() ??
+          'Umum',
+      deskripsi: json['deskripsi']?.toString() ??
+          json['description']?.toString() ??
+          'Tidak ada deskripsi.',
+      rating: _parseToDouble(json['rating'] ?? 4.5), // Default jika null
+      terjual: _parseToInt(json['terjual'] ?? json['sold'] ?? 0),
+      dilihat: _parseToInt(json['dilihat'] ?? json['viewed'] ?? 0),
       jumlah: _parseToInt(json['jumlah'] ?? 1),
     );
   }
@@ -66,18 +79,26 @@ class Produk {
       'image': gambar,
       'stock': stok,
       'category': kategori,
+      'description': deskripsi,
+      'rating': rating,
+      'sold': terjual,
+      'viewed': dilihat,
       'jumlah': jumlah,
     };
   }
 
   // Method copyWith untuk update data
   Produk copyWith({
-    String? id,
+    int? id,
     String? nama,
     double? harga,
     String? gambar,
     int? stok,
     String? kategori,
+    String? deskripsi,
+    double? rating,
+    int? terjual,
+    int? dilihat,
     int? jumlah,
   }) {
     return Produk(
@@ -87,6 +108,10 @@ class Produk {
       gambar: gambar ?? this.gambar,
       stok: stok ?? this.stok,
       kategori: kategori ?? this.kategori,
+      deskripsi: deskripsi ?? this.deskripsi,
+      rating: rating ?? this.rating,
+      terjual: terjual ?? this.terjual,
+      dilihat: dilihat ?? this.dilihat,
       jumlah: jumlah ?? this.jumlah,
     );
   }

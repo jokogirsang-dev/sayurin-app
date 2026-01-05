@@ -1,5 +1,3 @@
-// lib/ui/checkout_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
@@ -28,9 +26,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Future<void> _placeOrder(BuildContext context) async {
     final cartProv = Provider.of<CartProvider>(context, listen: false);
     final pesananProv = Provider.of<PesananProvider>(context, listen: false);
+    
     if (_addrCtl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Isi alamat pengiriman')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Isi alamat pengiriman'))
+      );
       return;
     }
 
@@ -41,6 +41,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final total = cartProv.getTotal();
 
       pesananProv.tambahPesanan(
+        userId: 1, // TODO: Ganti dengan userId dari sesi login
         items: items,
         totalHarga: total,
       );
@@ -49,14 +50,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
       cartProv.clear();
 
       // ✅ DEBUG: Show success with order details
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              '✅ Pesanan Berhasil! ID: ${DateTime.now().millisecondsSinceEpoch}'),
-          duration: const Duration(seconds: 3),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '✅ Pesanan Berhasil! ID: ${DateTime.now().millisecondsSinceEpoch}'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
 
       // sukses
       if (!mounted) return;
@@ -77,8 +80,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal membuat pesanan. Coba lagi.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal membuat pesanan. Coba lagi.'))
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -91,7 +97,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'Checkout',
         backgroundColor: Colors.white,
       ),

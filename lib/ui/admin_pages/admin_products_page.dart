@@ -14,81 +14,186 @@ class AdminProductsPage extends StatefulWidget {
 }
 
 class _AdminProductsPageState extends State<AdminProductsPage> {
+  late Future<void> _productsFuture;
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Memuat data produk saat halaman pertama kali dibuka
+    _productsFuture = _fetchProducts();
+  }
+
+  Future<void> _fetchProducts() {
+    // Memanggil provider untuk mengambil data, listen: false karena hanya butuh aksi
+    return Provider.of<ProdukProvider>(context, listen: false).fetchProduk();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'Manajemen Produk',
-        backgroundColor: const Color(0xFF1565C0),
+        backgroundColor: Color(0xFF1565C0),
         titleColor: Colors.white,
       ),
-      body: Consumer2<AdminProvider, ProdukProvider>(
-        builder: (context, adminProv, produkProv, _) {
-          // Use actual data dari ProdukProvider
-          final products = _searchQuery.isEmpty
-              ? produkProv.produkList
-              : produkProv.produkList
-                  .where((p) =>
-                      p.nama
-                          .toLowerCase()
-                          .contains(_searchQuery.toLowerCase()) ||
-                      p.kategori
-                          .toLowerCase()
-                          .contains(_searchQuery.toLowerCase()))
-                  .toList();
-
-          return Column(
-            children: [
-              // === SEARCH BAR ===
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextField(
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value);
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Cari produk...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
+      body: FutureBuilder(
+        future: _productsFuture,
+        builder: (ctx, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // Tampilkan loading indicator saat data sedang dimuat
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            // Tampilkan pesan error jika terjadi masalah
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Gagal memuat data: ${snapshot.error}'),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _productsFuture = _fetchProducts();
+                      });
+                    },
+                    child: const Text('Coba Lagi'),
+                  )
+                ],
               ),
-
-              // === PRODUCTS LIST ===
-              Expanded(
-                child: products.isEmpty
-                    ? const Center(
-                        child: Text('Tidak ada produk'),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: products.length,
-                        itemBuilder: (context, index) {
-                          final product = products[index];
-                          return _buildProductCard(context, product, adminProv);
-                        },
-                      ),
-              ),
-            ],
-          );
+            );
+          } else {
+            // Jika data berhasil dimuat, tampilkan UI utama
+            return _buildProductList();
+          }
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddProductDialog(context),
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('Tambah Produk'),
+        backgroundColor: const Color(0xFF1565C0),
       ),
     );
   }
 
-  Widget _buildProductCard(
-      BuildContext context, Produk product, AdminProvider adminProv) {
+  Widget _buildProductList() {
+    return Consumer<ProdukProvider>(
+      builder: (context, produkProv, _) {
+        final allProducts = produkProv.listProduk ?? [];
+        final products = _searchQuery.isEmpty
+            ? allProducts
+            : allProducts
+                .where((p) =>
+                    p.nama.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                    p.kategori
+                        .toLowerCase()
+                        .contains(_searchQuery.toLowerCase()))
+                .toList();
+
+        return Column(
+          children: [
+            // === SEARCH BAR ===
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                onChanged: (value) {
+                  setState(() => _searchQuery = value);
+                },
+                decoration: InputDecoration(
+                  hintText: 'Cari produk atau kategori...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF1565C0)),
+                  ),
+                ),
+              ),
+            ),
+
+            // === PRODUCTS COUNT ===
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Text(
+                    '${products.length} Produk',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // === PRODUCTS LIST ===
+            Expanded(
+              child: products.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchQuery.isEmpty
+                                ? 'Belum ada produk'
+                                : 'Produk tidak ditemukan',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetchProducts,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          final product = products[index];
+                          // AdminProvider didapat dari context via Provider.of
+                          return _buildProductCard(context, product);
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildProductCard(BuildContext context, Produk product) {
+    // AdminProvider diambil di sini agar tidak perlu di-pass sebagai argumen
+    final adminProv = Provider.of<AdminProvider>(context, listen: false);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -105,8 +210,14 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                 errorBuilder: (_, __, ___) => Container(
                   width: 80,
                   height: 80,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.image_not_supported),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    color: Colors.grey,
+                  ),
                 ),
               ),
             ),
@@ -135,40 +246,47 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: 2,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.blue[100],
+                          color: Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           product.kategori,
-                          style: const TextStyle(fontSize: 11),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: 2,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: product.stok > 0
-                              ? Colors.green[100]
-                              : Colors.red[100],
+                              ? Colors.green.shade50
+                              : Colors.red.shade50,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           'Stok: ${product.stok}',
                           style: TextStyle(
                             fontSize: 11,
-                            color: product.stok > 0 ? Colors.green : Colors.red,
+                            color: product.stok > 0
+                                ? Colors.green.shade700
+                                : Colors.red.shade700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -182,16 +300,16 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
             Column(
               children: [
                 IconButton(
-                  onPressed: () =>
-                      _showEditProductDialog(context, product, adminProv),
+                  onPressed: () => _showEditProductDialog(context, product),
                   icon: const Icon(Icons.edit, size: 20),
                   color: Colors.blue,
+                  tooltip: 'Edit',
                 ),
                 IconButton(
-                  onPressed: () =>
-                      _showDeleteConfirmation(context, product, adminProv),
+                  onPressed: () => _showDeleteConfirmation(context, product),
                   icon: const Icon(Icons.delete, size: 20),
                   color: Colors.red,
+                  tooltip: 'Hapus',
                 ),
               ],
             ),
@@ -221,14 +339,21 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextFormField(
-                    decoration: const InputDecoration(labelText: 'Nama Produk'),
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Produk',
+                      border: OutlineInputBorder(),
+                    ),
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Nama wajib diisi' : null,
                     onSaved: (v) => nama = v ?? '',
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    decoration: const InputDecoration(labelText: 'Harga'),
+                    decoration: const InputDecoration(
+                      labelText: 'Harga',
+                      border: OutlineInputBorder(),
+                      prefixText: 'Rp ',
+                    ),
                     keyboardType: TextInputType.number,
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Harga wajib diisi' : null,
@@ -236,7 +361,10 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    decoration: const InputDecoration(labelText: 'Stok'),
+                    decoration: const InputDecoration(
+                      labelText: 'Stok',
+                      border: OutlineInputBorder(),
+                    ),
                     keyboardType: TextInputType.number,
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Stok wajib diisi' : null,
@@ -244,13 +372,26 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    decoration: const InputDecoration(labelText: 'URL Gambar'),
+                    decoration: const InputDecoration(
+                      labelText: 'URL Gambar',
+                      border: OutlineInputBorder(),
+                      hintText: 'https://...',
+                    ),
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? 'URL gambar wajib diisi'
+                        : null,
                     onSaved: (v) => gambar = v ?? '',
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    decoration: const InputDecoration(labelText: 'Kategori'),
+                    decoration: const InputDecoration(
+                      labelText: 'Kategori',
+                      border: OutlineInputBorder(),
+                    ),
                     initialValue: kategori,
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? 'Kategori wajib diisi'
+                        : null,
                     onSaved: (v) => kategori = v ?? 'Sayuran',
                   ),
                 ],
@@ -269,7 +410,7 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                   final adminProv =
                       Provider.of<AdminProvider>(context, listen: false);
 
-                  final success = await adminProv.addProduct(
+                  final success = await adminProv.tambahProduk(
                     nama: nama,
                     harga: harga,
                     gambar: gambar,
@@ -284,6 +425,7 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                         SnackBar(
                           content: Text('Produk "$nama" berhasil ditambahkan'),
                           backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     } else {
@@ -291,12 +433,16 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                         const SnackBar(
                           content: Text('Gagal menambahkan produk'),
                           backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     }
                   }
                 }
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1565C0),
+              ),
               child: const Text('Simpan'),
             ),
           ],
@@ -305,14 +451,14 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
     );
   }
 
-  void _showEditProductDialog(
-      BuildContext context, Produk product, AdminProvider adminProv) {
+  void _showEditProductDialog(BuildContext context, Produk product) {
     final formKey = GlobalKey<FormState>();
     String nama = product.nama;
     double harga = product.harga;
     String gambar = product.gambar;
     int stok = product.stok;
     String kategori = product.kategori;
+    final adminProv = Provider.of<AdminProvider>(context, listen: false);
 
     showDialog(
       context: context,
@@ -327,7 +473,10 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                 children: [
                   TextFormField(
                     initialValue: nama,
-                    decoration: const InputDecoration(labelText: 'Nama Produk'),
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Produk',
+                      border: OutlineInputBorder(),
+                    ),
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Nama wajib diisi' : null,
                     onSaved: (v) => nama = v ?? '',
@@ -335,7 +484,11 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                   const SizedBox(height: 12),
                   TextFormField(
                     initialValue: harga.toString(),
-                    decoration: const InputDecoration(labelText: 'Harga'),
+                    decoration: const InputDecoration(
+                      labelText: 'Harga',
+                      border: OutlineInputBorder(),
+                      prefixText: 'Rp ',
+                    ),
                     keyboardType: TextInputType.number,
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Harga wajib diisi' : null,
@@ -344,7 +497,10 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                   const SizedBox(height: 12),
                   TextFormField(
                     initialValue: stok.toString(),
-                    decoration: const InputDecoration(labelText: 'Stok'),
+                    decoration: const InputDecoration(
+                      labelText: 'Stok',
+                      border: OutlineInputBorder(),
+                    ),
                     keyboardType: TextInputType.number,
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Stok wajib diisi' : null,
@@ -353,13 +509,26 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                   const SizedBox(height: 12),
                   TextFormField(
                     initialValue: gambar,
-                    decoration: const InputDecoration(labelText: 'URL Gambar'),
+                    decoration: const InputDecoration(
+                      labelText: 'URL Gambar',
+                      border: OutlineInputBorder(),
+                      hintText: 'https://...',
+                    ),
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? 'URL gambar wajib diisi'
+                        : null,
                     onSaved: (v) => gambar = v ?? '',
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     initialValue: kategori,
-                    decoration: const InputDecoration(labelText: 'Kategori'),
+                    decoration: const InputDecoration(
+                      labelText: 'Kategori',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? 'Kategori wajib diisi'
+                        : null,
                     onSaved: (v) => kategori = v ?? '',
                   ),
                 ],
@@ -376,7 +545,7 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                 if (formKey.currentState?.validate() ?? false) {
                   formKey.currentState?.save();
 
-                  final success = await adminProv.editProduct(
+                  final success = await adminProv.editProduk(
                     id: product.id,
                     nama: nama,
                     harga: harga,
@@ -392,12 +561,24 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
                         const SnackBar(
                           content: Text('Produk berhasil diperbarui'),
                           backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Gagal memperbarui produk'),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     }
                   }
                 }
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+              ),
               child: const Text('Update'),
             ),
           ],
@@ -406,8 +587,9 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
     );
   }
 
-  void _showDeleteConfirmation(
-      BuildContext context, Produk product, AdminProvider adminProv) {
+  void _showDeleteConfirmation(BuildContext context, Produk product) {
+    final adminProv = Provider.of<AdminProvider>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (context) {
@@ -421,14 +603,24 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final success = await adminProv.deleteProduct(product.id);
+                final success = await adminProv.hapusProduk(product.id);
                 if (mounted) {
                   Navigator.pop(context);
                   if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Produk berhasil dihapus'),
+                      SnackBar(
+                        content:
+                            Text('Produk "${product.nama}" berhasil dihapus'),
                         backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Gagal menghapus produk'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 2),
                       ),
                     );
                   }
