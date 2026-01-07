@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../providers/admin_provider.dart';
 import '../../providers/produk_provider.dart';
 import '../../model/produk.dart';
@@ -20,13 +24,28 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
   @override
   void initState() {
     super.initState();
-    // Memuat data produk saat halaman pertama kali dibuka
-    _productsFuture = _fetchProducts();
+    // Set a placeholder future and trigger fetch after first frame to avoid notify during build
+    _productsFuture = Future.value();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _productsFuture = _fetchProducts();
+      });
+    });
   }
 
-  Future<void> _fetchProducts() {
-    // Memanggil provider untuk mengambil data, listen: false karena hanya butuh aksi
-    return Provider.of<ProdukProvider>(context, listen: false).fetchProduk();
+  Future<void> _fetchProducts() async {
+    try {
+      final prov = Provider.of<ProdukProvider>(context, listen: false);
+      if (prov.listProduk.isNotEmpty) {
+        // Sudah ada data, langsung return
+        return;
+      }
+      await prov.fetchProduk();
+    } catch (e) {
+      // Tangani error agar tidak mem-block UI
+      debugPrint('Error fetch products: $e');
+      rethrow;
+    }
   }
 
   @override
@@ -202,24 +221,69 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
             // === IMAGE ===
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                product.gambar,
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
+              child: Builder(builder: (context) {
+                final g = product.gambar;
+                if (g.isEmpty) {
+                  return Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey,
+                    ),
+                  );
+                }
+
+                if (g.startsWith('http')) {
+                  return Image.network(
+                    g,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.broken_image,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  );
+                }
+
+                // Fallback: treat as local file path
+                try {
+                  final file = File(g);
+                  if (!file.existsSync()) throw Exception('File not found');
+                  return Image.file(
+                    file,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                  );
+                } catch (_) {
+                  return Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey,
+                    ),
+                  );
+                }
+              }),
             ),
             const SizedBox(width: 12),
 
@@ -330,123 +394,167 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Tambah Produk Baru'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Produk',
-                      border: OutlineInputBorder(),
+        String? pickedImagePath;
+        return StatefulBuilder(builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text('Tambah Produk Baru'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Produk',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? 'Nama wajib diisi' : null,
+                      onSaved: (v) => nama = v ?? '',
                     ),
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Nama wajib diisi' : null,
-                    onSaved: (v) => nama = v ?? '',
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Harga',
-                      border: OutlineInputBorder(),
-                      prefixText: 'Rp ',
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Harga',
+                        border: OutlineInputBorder(),
+                        prefixText: 'Rp ',
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? 'Harga wajib diisi' : null,
+                      onSaved: (v) => harga = double.tryParse(v ?? '0') ?? 0,
                     ),
-                    keyboardType: TextInputType.number,
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Harga wajib diisi' : null,
-                    onSaved: (v) => harga = double.tryParse(v ?? '0') ?? 0,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Stok',
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Stok',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? 'Stok wajib diisi' : null,
+                      onSaved: (v) => stok = int.tryParse(v ?? '0') ?? 0,
                     ),
-                    keyboardType: TextInputType.number,
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Stok wajib diisi' : null,
-                    onSaved: (v) => stok = int.tryParse(v ?? '0') ?? 0,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'URL Gambar',
-                      border: OutlineInputBorder(),
-                      hintText: 'https://...',
+                    const SizedBox(height: 12),
+
+                    // Gambar: pilihan URL atau pilih dari perangkat
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            decoration: const InputDecoration(
+                              labelText: 'URL Gambar (opsional)',
+                              border: OutlineInputBorder(),
+                              hintText: 'https://... atau kosongkan',
+                            ),
+                            validator: (v) => null, // tidak wajib
+                            onSaved: (v) => gambar = v ?? '',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final XFile? xfile = await ImagePicker()
+                                .pickImage(source: ImageSource.gallery);
+                            if (xfile != null) {
+                              setStateDialog(() {
+                                pickedImagePath = xfile.path;
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.photo_library),
+                          label: const Text('Pilih'),
+                        ),
+                      ],
                     ),
-                    validator: (v) => (v == null || v.isEmpty)
-                        ? 'URL gambar wajib diisi'
-                        : null,
-                    onSaved: (v) => gambar = v ?? '',
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Kategori',
-                      border: OutlineInputBorder(),
+
+                    const SizedBox(height: 12),
+
+                    if (pickedImagePath != null)
+                      Container(
+                        width: double.infinity,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(File(pickedImagePath!),
+                              fit: BoxFit.cover),
+                        ),
+                      ),
+
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Kategori',
+                        border: OutlineInputBorder(),
+                      ),
+                      initialValue: kategori,
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'Kategori wajib diisi'
+                          : null,
+                      onSaved: (v) => kategori = v ?? 'Sayuran',
                     ),
-                    initialValue: kategori,
-                    validator: (v) => (v == null || v.isEmpty)
-                        ? 'Kategori wajib diisi'
-                        : null,
-                    onSaved: (v) => kategori = v ?? 'Sayuran',
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (formKey.currentState?.validate() ?? false) {
-                  formKey.currentState?.save();
-                  final adminProv =
-                      Provider.of<AdminProvider>(context, listen: false);
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState?.validate() ?? false) {
+                    formKey.currentState?.save();
+                    final adminProv =
+                        Provider.of<AdminProvider>(context, listen: false);
 
-                  final success = await adminProv.tambahProduk(
-                    nama: nama,
-                    harga: harga,
-                    gambar: gambar,
-                    stok: stok,
-                    kategori: kategori,
-                  );
+                    final gambarUsed = pickedImagePath ?? gambar;
 
-                  if (mounted) {
-                    Navigator.pop(context);
-                    if (success) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Produk "$nama" berhasil ditambahkan'),
-                          backgroundColor: Colors.green,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Gagal menambahkan produk'),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
+                    final success = await adminProv.tambahProduk(
+                      nama: nama,
+                      harga: harga,
+                      gambar: gambarUsed,
+                      stok: stok,
+                      kategori: kategori,
+                    );
+
+                    if (mounted) {
+                      Navigator.pop(context);
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content:
+                                Text('Produk "${nama}" berhasil ditambahkan'),
+                            backgroundColor: Colors.green,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Gagal menambahkan produk'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
                     }
                   }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1565C0),
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1565C0),
+                ),
+                child: const Text('Simpan'),
               ),
-              child: const Text('Simpan'),
-            ),
-          ],
-        );
+            ],
+          );
+        });
       },
     );
   }
@@ -463,126 +571,167 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Edit Produk'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    initialValue: nama,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Produk',
-                      border: OutlineInputBorder(),
+        String? pickedImagePath;
+        return StatefulBuilder(builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text('Edit Produk'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      initialValue: nama,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Produk',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? 'Nama wajib diisi' : null,
+                      onSaved: (v) => nama = v ?? '',
                     ),
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Nama wajib diisi' : null,
-                    onSaved: (v) => nama = v ?? '',
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    initialValue: harga.toString(),
-                    decoration: const InputDecoration(
-                      labelText: 'Harga',
-                      border: OutlineInputBorder(),
-                      prefixText: 'Rp ',
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      initialValue: harga.toString(),
+                      decoration: const InputDecoration(
+                        labelText: 'Harga',
+                        border: OutlineInputBorder(),
+                        prefixText: 'Rp ',
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? 'Harga wajib diisi' : null,
+                      onSaved: (v) => harga = double.tryParse(v ?? '0') ?? 0,
                     ),
-                    keyboardType: TextInputType.number,
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Harga wajib diisi' : null,
-                    onSaved: (v) => harga = double.tryParse(v ?? '0') ?? 0,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    initialValue: stok.toString(),
-                    decoration: const InputDecoration(
-                      labelText: 'Stok',
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      initialValue: stok.toString(),
+                      decoration: const InputDecoration(
+                        labelText: 'Stok',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? 'Stok wajib diisi' : null,
+                      onSaved: (v) => stok = int.tryParse(v ?? '0') ?? 0,
                     ),
-                    keyboardType: TextInputType.number,
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Stok wajib diisi' : null,
-                    onSaved: (v) => stok = int.tryParse(v ?? '0') ?? 0,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    initialValue: gambar,
-                    decoration: const InputDecoration(
-                      labelText: 'URL Gambar',
-                      border: OutlineInputBorder(),
-                      hintText: 'https://...',
+                    const SizedBox(height: 12),
+                    // Gambar: pilihan URL atau pilih dari perangkat (opsional)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: gambar,
+                            decoration: const InputDecoration(
+                              labelText: 'URL Gambar (opsional)',
+                              border: OutlineInputBorder(),
+                              hintText: 'https://... atau kosongkan',
+                            ),
+                            validator: (v) => null,
+                            onSaved: (v) => gambar = v ?? '',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final XFile? xfile = await ImagePicker()
+                                .pickImage(source: ImageSource.gallery);
+                            if (xfile != null) {
+                              setStateDialog(() {
+                                pickedImagePath = xfile.path;
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.photo_library),
+                          label: const Text('Pilih'),
+                        ),
+                      ],
                     ),
-                    validator: (v) => (v == null || v.isEmpty)
-                        ? 'URL gambar wajib diisi'
-                        : null,
-                    onSaved: (v) => gambar = v ?? '',
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    initialValue: kategori,
-                    decoration: const InputDecoration(
-                      labelText: 'Kategori',
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 12),
+
+                    if (pickedImagePath != null)
+                      Container(
+                        width: double.infinity,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(File(pickedImagePath!),
+                              fit: BoxFit.cover),
+                        ),
+                      ),
+
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      initialValue: kategori,
+                      decoration: const InputDecoration(
+                        labelText: 'Kategori',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'Kategori wajib diisi'
+                          : null,
+                      onSaved: (v) => kategori = v ?? '',
                     ),
-                    validator: (v) => (v == null || v.isEmpty)
-                        ? 'Kategori wajib diisi'
-                        : null,
-                    onSaved: (v) => kategori = v ?? '',
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (formKey.currentState?.validate() ?? false) {
-                  formKey.currentState?.save();
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState?.validate() ?? false) {
+                    formKey.currentState?.save();
 
-                  final success = await adminProv.editProduk(
-                    id: product.id,
-                    nama: nama,
-                    harga: harga,
-                    gambar: gambar,
-                    stok: stok,
-                    kategori: kategori,
-                  );
+                    final gambarUsed = pickedImagePath ?? gambar;
 
-                  if (mounted) {
-                    Navigator.pop(context);
-                    if (success) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Produk berhasil diperbarui'),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Gagal memperbarui produk'),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
+                    final success = await adminProv.editProduk(
+                      id: product.id,
+                      nama: nama,
+                      harga: harga,
+                      gambar: gambarUsed,
+                      stok: stok,
+                      kategori: kategori,
+                    );
+
+                    if (mounted) {
+                      Navigator.pop(context);
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Produk berhasil diperbarui'),
+                            backgroundColor: Colors.green,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Gagal memperbarui produk'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
                     }
                   }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                ),
+                child: const Text('Update'),
               ),
-              child: const Text('Update'),
-            ),
-          ],
-        );
+            ],
+          );
+        });
       },
     );
   }

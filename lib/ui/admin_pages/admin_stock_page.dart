@@ -20,8 +20,13 @@ class _AdminStockPageState extends State<AdminStockPage> {
   @override
   void initState() {
     super.initState();
-    // 1. AMBIL DATA SAAT HALAMAN DIBUKA
-    _productsFuture = _fetchProducts();
+    // Delay fetch until after first frame to avoid notifyListeners during build
+    _productsFuture = Future.value();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _productsFuture = _fetchProducts();
+      });
+    });
   }
 
   Future<void> _fetchProducts() {
@@ -77,7 +82,8 @@ class _AdminStockPageState extends State<AdminStockPage> {
         // Build categories from real product data
         final Map<String, int> categories = {};
         for (var product in allProducts) {
-          categories[product.kategori] = (categories[product.kategori] ?? 0) + 1;
+          categories[product.kategori] =
+              (categories[product.kategori] ?? 0) + 1;
         }
 
         var products = _filterCategory.isNotEmpty
@@ -113,7 +119,8 @@ class _AdminStockPageState extends State<AdminStockPage> {
                           label: entry.key,
                           count: entry.value,
                           selected: _filterCategory == entry.key,
-                          onTap: () => setState(() => _filterCategory = entry.key),
+                          onTap: () =>
+                              setState(() => _filterCategory = entry.key),
                         ),
                       );
                     }),
@@ -146,7 +153,10 @@ class _AdminStockPageState extends State<AdminStockPage> {
                   ),
                   _buildSummaryItem(
                     'Stok Rendah',
-                    products.where((p) => p.stok > 0 && p.stok < 5).length.toString(),
+                    products
+                        .where((p) => p.stok > 0 && p.stok < 5)
+                        .length
+                        .toString(),
                     Icons.warning,
                   ),
                   Container(
@@ -177,7 +187,9 @@ class _AdminStockPageState extends State<AdminStockPage> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _filterCategory.isEmpty ? 'Belum ada produk' : 'Produk di kategori ini kosong',
+                            _filterCategory.isEmpty
+                                ? 'Belum ada produk'
+                                : 'Produk di kategori ini kosong',
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey.shade600,
@@ -325,8 +337,8 @@ class _AdminStockPageState extends State<AdminStockPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1565C0),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                 ),
               ],
@@ -365,7 +377,8 @@ class _AdminStockPageState extends State<AdminStockPage> {
   }
 
   // Helper function to reduce repetition
-  Future<void> _quickUpdateStock(AdminProvider adminProv, Produk product, int newStockValue) async {
+  Future<void> _quickUpdateStock(
+      AdminProvider adminProv, Produk product, int newStockValue) async {
     final newStock = newStockValue.clamp(0, 10000);
     // 3. PERBAIKI ERROR TIPE DATA ID (String -> int)
     await adminProv.updateStock((product.id), newStock);
@@ -383,17 +396,17 @@ class _AdminStockPageState extends State<AdminStockPage> {
     return ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: selected ? Colors.green : Colors.white,
-          foregroundColor: selected ? Colors.white : Colors.black,
-          elevation: selected ? 2 : 0,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: Colors.grey.shade300)),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
+            backgroundColor: selected ? Colors.green : Colors.white,
+            foregroundColor: selected ? Colors.white : Colors.black,
+            elevation: selected ? 2 : 0,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: Colors.grey.shade300)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Text(label,
-              style:
-                  TextStyle(fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
+              style: TextStyle(
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
           const SizedBox(width: 6),
           Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -426,7 +439,8 @@ class _AdminStockPageState extends State<AdminStockPage> {
         style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             side: BorderSide(color: color ?? Colors.grey.shade400),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
         child: Text(label,
             style: TextStyle(fontWeight: FontWeight.bold, color: color)));
   }
@@ -481,11 +495,13 @@ class _AdminStockPageState extends State<AdminStockPage> {
                     child: const Text('Batal')),
                 ElevatedButton(
                     onPressed: () async {
-                      final newStock = int.tryParse(controller.text) ?? product.stok;
+                      final newStock =
+                          int.tryParse(controller.text) ?? product.stok;
                       if (newStock < 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                            content: Text('Stok tidak boleh kurang dari 0'),
-                            backgroundColor: Colors.red));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Stok tidak boleh kurang dari 0'),
+                                backgroundColor: Colors.red));
                         return;
                       }
                       // 3. PERBAIKI ERROR TIPE DATA ID (String -> int)

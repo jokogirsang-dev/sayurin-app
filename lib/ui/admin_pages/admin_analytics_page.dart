@@ -7,6 +7,8 @@ import '../../helpers/format_currency.dart';
 import '../../widget/custom_app_bar.dart';
 import '../../model/pesanan.dart'; // Asumsi impor model
 import '../../model/produk.dart'; // Asumsi impor model
+import '../../providers/user_provider.dart';
+import '../../model/user.dart';
 
 class AdminAnalyticsPage extends StatefulWidget {
   const AdminAnalyticsPage({super.key});
@@ -28,19 +30,38 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
       body: Consumer3<AdminProvider, PesananProvider, ProdukProvider>(
         builder: (context, adminProv, pesananProv, produkProv, _) {
           // Build analytics from real data
-          final orders = pesananProv.semuaPesanan ?? []; // Null safety
+          final orders = pesananProv.semuaPesanan; // already typed
           final totalOrders = orders.length;
-          final completedOrders = orders.where((o) => o.status == 'completed').length;
-          final pendingOrders = orders.where((o) => o.status == 'pending').length;
-          final totalRevenue = orders.fold<double>(0, (sum, order) => sum + (order.totalHarga ?? 0)); // Null safety
-          final averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0.0;
-          final lowStockProducts = produkProv.listProduk?.where((p) => p.stok < 5).toList() ?? []; // Calculate here
-          final double completionRate = totalOrders > 0 ? completedOrders / totalOrders : 0.0;
+          final completedOrders = orders
+              .where((o) =>
+                  o.status.toLowerCase().contains('selesai') ||
+                  o.status.toLowerCase().contains('done') ||
+                  o.status.toLowerCase().contains('completed'))
+              .length;
+          final pendingOrders = orders
+              .where((o) =>
+                  o.status.toLowerCase().contains('diproses') ||
+                  o.status.toLowerCase().contains('pending'))
+              .length;
+          final totalRevenue =
+              orders.fold<double>(0, (sum, order) => sum + (order.totalHarga));
+          final averageOrderValue =
+              totalOrders > 0 ? totalRevenue / totalOrders : 0.0;
+          final lowStockProducts =
+              produkProv.listProduk.where((p) => p.stok < 5).toList();
+          final double completionRate =
+              totalOrders > 0 ? completedOrders / totalOrders : 0.0;
+
+          // Users (from UserProvider)
+          final userProv = Provider.of<UserProvider>(context, listen: true);
+          final totalUsers = userProv.totalUsers;
 
           // Build category data from real products
           final Map<String, int> categoryData = {};
-          for (var product in produkProv.listProduk ?? []) { // Null safety
-            categoryData[product.kategori] = (categoryData[product.kategori] ?? 0) + 1;
+          for (var product in produkProv.listProduk ?? []) {
+            // Null safety
+            categoryData[product.kategori] =
+                (categoryData[product.kategori] ?? 0) + 1;
           }
 
           final analytics = {
@@ -87,7 +108,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                             value: completionRate,
                             minHeight: 8,
                             backgroundColor: Colors.grey[300],
-                            valueColor: const AlwaysStoppedAnimation(Colors.green),
+                            valueColor:
+                                const AlwaysStoppedAnimation(Colors.green),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -116,13 +138,15 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                   children: [
                     _buildAnalyticsCard(
                       title: 'Total Revenue',
-                      value: 'Rp ${FormatCurrency.toRupiah((analytics['totalRevenue'] as num?)?.toDouble() ?? 0)}',
+                      value:
+                          'Rp ${FormatCurrency.toRupiah((analytics['totalRevenue'] as num?)?.toDouble() ?? 0)}',
                       icon: Icons.attach_money,
                       color: Colors.green,
                     ),
                     _buildAnalyticsCard(
                       title: 'Avg. Order Value',
-                      value: 'Rp ${FormatCurrency.toRupiah((analytics['averageOrderValue'] as num?)?.toDouble() ?? 0)}',
+                      value:
+                          'Rp ${FormatCurrency.toRupiah((analytics['averageOrderValue'] as num?)?.toDouble() ?? 0)}',
                       icon: Icons.trending_up,
                       color: Colors.blue,
                     ),
@@ -139,14 +163,17 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         children: categoryData.entries.map((entry) {
-                          final percentage = (entry.value / (analytics['totalProducts'] as int? ?? 1)) * 100; // Fix undefined
+                          final percentage = (entry.value /
+                                  (analytics['totalProducts'] as int? ?? 1)) *
+                              100; // Fix undefined
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(entry.key),
                                     Text(
@@ -165,7 +192,9 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                                     minHeight: 8,
                                     backgroundColor: Colors.grey[300],
                                     valueColor: AlwaysStoppedAnimation(
-                                      Color.lerp(Colors.blue, Colors.green, percentage / 100) ?? Colors.blue, // Null safety
+                                      Color.lerp(Colors.blue, Colors.green,
+                                              percentage / 100) ??
+                                          Colors.blue, // Null safety
                                     ),
                                   ),
                                 ),
@@ -197,7 +226,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                       children: [
                         _buildStatusRow(
                           label: 'Completed',
-                          count: analytics['completedOrders'] as int? ?? 0, // Type safety
+                          count: analytics['completedOrders'] as int? ??
+                              0, // Type safety
                           total: analytics['totalOrders'] as int? ?? 0,
                           color: Colors.green,
                         ),
@@ -217,7 +247,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                 // === TOP INSIGHTS ===
                 _buildSectionTitle(context, 'Top Insights'),
                 const SizedBox(height: 12),
-                ...(analytics['lowStockProducts'] as List<Produk>? ?? []).isNotEmpty // Fix type and undefined
+                ...(analytics['lowStockProducts'] as List<Produk>? ?? [])
+                        .isNotEmpty // Fix type and undefined
                     ? [
                         Card(
                           color: Colors.red[50],
@@ -229,7 +260,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         'Stok Rendah',
@@ -280,6 +312,59 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                             ],
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // === USERS MANAGEMENT ===
+                _buildSectionTitle(context, 'Users'),
+                const SizedBox(height: 8),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Total Users: $totalUsers'),
+                            ElevatedButton(
+                              onPressed: () async {
+                                await userProv.fetchUsers();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Users refreshed')));
+                              },
+                              child: const Text('Refresh'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ...userProv.allUsers
+                            .map((u) => ListTile(
+                                  title: Text(u.name),
+                                  subtitle: Text(u.email),
+                                  trailing: ElevatedButton(
+                                    onPressed: () async {
+                                      await userProv.toggleAdmin(u.id);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                              content: Text(
+                                                  'Updated role for ${u.name}')));
+                                    },
+                                    child: Text(
+                                        u.role == 'admin' ? 'Revoke' : 'Grant'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: u.role == 'admin'
+                                          ? Colors.red
+                                          : Colors.green,
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
                       ],
                     ),
                   ),
