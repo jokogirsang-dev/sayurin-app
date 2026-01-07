@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import '../providers/pesanan_provider.dart';
 import '../providers/user_provider.dart';
@@ -16,6 +18,7 @@ class PesananPage extends StatefulWidget {
 class _PesananPageState extends State<PesananPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  StreamSubscription<Map<String, dynamic>>? _statusSub;
 
   @override
   void initState() {
@@ -24,7 +27,35 @@ class _PesananPageState extends State<PesananPage>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Subscribe once to status update events to notify the logged-in user
+    if (_statusSub == null) {
+      final pesProv = Provider.of<PesananProvider>(context, listen: false);
+      final userProv = Provider.of<UserProvider>(context, listen: false);
+      _statusSub = pesProv.statusUpdates.listen((event) {
+        final uid = userProv.userId;
+        if (uid != null && event['userId'] == uid) {
+          final id = event['orderId'];
+          final st = event['status'];
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Status order #$id diubah menjadi $st'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    _statusSub?.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -63,9 +94,18 @@ class _PesananPageState extends State<PesananPage>
 
           // TAB VIEW
           Expanded(
-            child: Consumer<PesananProvider>(
-              builder: (context, provider, _) {
-                final allPesanan = provider.semuaPesanan;
+            child: Consumer2<PesananProvider, UserProvider>(
+              builder: (context, provider, userProv, _) {
+                final userId = userProv.userId;
+                if (userId == null) {
+                  return Center(
+                      child:
+                          Text('Silakan login untuk melihat riwayat pesanan'));
+                }
+
+                final allPesanan = provider.semuaPesanan
+                    .where((p) => p.userId == userId)
+                    .toList();
 
                 if (allPesanan.isEmpty) {
                   return _buildEmpty();
@@ -209,12 +249,22 @@ class _PesananPageState extends State<PesananPage>
             child: const Text('Detail'),
           ),
         ),
-        if (pesanan.status != 'Selesai') ...[
+        // User can only confirm receipt when status is 'Dikirim'.
+        if (pesanan.status == 'Dikirim') ...[
           const SizedBox(width: 8),
           Expanded(
             child: ElevatedButton(
               onPressed: () => _updateStatus(context, pesanan.id, 'Selesai'),
               child: const Text('Terima'),
+            ),
+          ),
+        ] else if (pesanan.status != 'Selesai') ...[
+          // For other in-progress statuses, show a small hint that admin will update the order.
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton(
+              onPressed: null,
+              child: const Text('Menunggu konfirmasi'),
             ),
           ),
         ],
@@ -250,16 +300,44 @@ class _PesananPageState extends State<PesananPage>
   // ===================== IMAGE =====================
 
   Widget _buildImage(String url) {
+    if (url.isEmpty) {
+      return Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Icon(Icons.image_not_supported),
+      );
+    }
+
     if (url.startsWith('http')) {
       return Image.network(
         url,
         width: 50,
         height: 50,
-        errorBuilder: (_, __, ___) =>
-            const Icon(Icons.image_not_supported),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
       );
     }
-    return const Icon(Icons.image);
+
+    try {
+      final file = File(url);
+      if (file.existsSync()) {
+        return Image.file(file, width: 50, height: 50, fit: BoxFit.cover);
+      }
+    } catch (_) {}
+
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: const Icon(Icons.image_not_supported),
+    );
   }
 
   // ===================== LOGIC =====================
