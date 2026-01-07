@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+// import 'package:flutter_stripe/flutter_stripe.dart';
 
 // =======================
 // PROVIDERS
@@ -24,7 +25,15 @@ import 'ui/profile_page.dart';
 import 'ui/about_page.dart';
 import 'ui/admin_dashboard.dart';
 
-void main() {
+// Admin Pages
+import 'ui/admin_pages/admin_analytics_page.dart';
+import 'ui/admin_pages/admin_products_page.dart';
+import 'ui/admin_pages/admin_stock_page.dart';
+import 'ui/admin_pages/admin_orders_page.dart';
+import 'ui/admin_pages/admin_reports_page.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -46,7 +55,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<AdminProvider>(
           create: (context) => AdminProvider(
             produkProvider: Provider.of<ProdukProvider>(context, listen: false),
-            pesananProvider: Provider.of<PesananProvider>(context, listen: false),
+            pesananProvider:
+                Provider.of<PesananProvider>(context, listen: false),
           ),
         ),
       ],
@@ -82,6 +92,11 @@ class MyApp extends StatelessWidget {
           '/profil': (context) => const ProfilePage(),
           '/about': (context) => const AboutPage(),
           '/admin': (context) => const AdminDashboard(),
+          '/admin/analytics': (context) => const AdminAnalyticsPage(),
+          '/admin/products': (context) => const AdminProductsPage(),
+          '/admin/stock': (context) => const AdminStockPage(),
+          '/admin/orders': (context) => const AdminOrdersPage(),
+          '/admin/reports': (context) => const AdminReportsPage(),
         },
       ),
     );
