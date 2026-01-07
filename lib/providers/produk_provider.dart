@@ -32,16 +32,19 @@ class ProdukProvider with ChangeNotifier {
           'id': '1',
           'nama': 'Andaliman',
           'harga': 25000,
-          'gambar': 'https://via.placeholder.com/150/FFC107/000000?Text=Andaliman',
+          'gambar':
+              'https://via.placeholder.com/150/FFC107/000000?Text=Andaliman',
           'stok': 50,
           'kategori': 'Bumbu',
-          'deskripsi': 'Merica batak yang khas, memberikan sensasi getir di lidah.',
+          'deskripsi':
+              'Merica batak yang khas, memberikan sensasi getir di lidah.',
         },
         {
           'id': '2',
           'nama': 'Daun Kunyit',
           'harga': 5000,
-          'gambar': 'https://via.placeholder.com/150/4CAF50/FFFFFF?Text=Daun+Kunyit',
+          'gambar':
+              'https://via.placeholder.com/150/4CAF50/FFFFFF?Text=Daun+Kunyit',
           'stok': 100,
           'kategori': 'Sayur',
           'deskripsi': 'Daun kunyit segar untuk menambah aroma masakan Anda.',
@@ -50,10 +53,12 @@ class ProdukProvider with ChangeNotifier {
           'id': '3',
           'nama': 'Bawang Batak',
           'harga': 15000,
-          'gambar': 'https://via.placeholder.com/150/8BC34A/FFFFFF?Text=Bawang+Batak',
+          'gambar':
+              'https://via.placeholder.com/150/8BC34A/FFFFFF?Text=Bawang+Batak',
           'stok': 80,
           'kategori': 'Bumbu',
-          'deskripsi': 'Bawang batak atau lokio, cocok untuk arsik dan masakan lainnya.',
+          'deskripsi':
+              'Bawang batak atau lokio, cocok untuk arsik dan masakan lainnya.',
         },
         {
           'id': '4',
@@ -68,7 +73,8 @@ class ProdukProvider with ChangeNotifier {
           'id': '5',
           'nama': 'Jeruk Manis',
           'harga': 20000,
-          'gambar': 'https://via.placeholder.com/150/FF9800/FFFFFF?Text=Jeruk+Manis',
+          'gambar':
+              'https://via.placeholder.com/150/FF9800/FFFFFF?Text=Jeruk+Manis',
           'stok': 120,
           'kategori': 'Buah',
           'deskripsi': 'Jeruk manis hasil panen dari kebun Simalungun.',
@@ -77,7 +83,8 @@ class ProdukProvider with ChangeNotifier {
           'id': '6',
           'nama': 'Tomat Merah',
           'harga': 18000,
-          'gambar': 'https://via.placeholder.com/150/E91E63/FFFFFF?Text=Tomat+Merah',
+          'gambar':
+              'https://via.placeholder.com/150/E91E63/FFFFFF?Text=Tomat+Merah',
           'stok': 200,
           'kategori': 'Sayur',
           'deskripsi': 'Tomat merah segar, kaya vitamin dan antioksidan.',
@@ -86,7 +93,8 @@ class ProdukProvider with ChangeNotifier {
           'id': '7',
           'nama': 'Cabai Rawit',
           'harga': 45000,
-          'gambar': 'https://via.placeholder.com/150/D32F2F/FFFFFF?Text=Cabai+Rawit',
+          'gambar':
+              'https://via.placeholder.com/150/D32F2F/FFFFFF?Text=Cabai+Rawit',
           'stok': 60,
           'kategori': 'Bumbu',
           'deskripsi': 'Cabai rawit super pedas untuk sambal andalan.',
@@ -95,7 +103,8 @@ class ProdukProvider with ChangeNotifier {
           'id': '8',
           'nama': 'Kangkung',
           'harga': 3000,
-          'gambar': 'https://via.placeholder.com/150/388E3C/FFFFFF?Text=Kangkung',
+          'gambar':
+              'https://via.placeholder.com/150/388E3C/FFFFFF?Text=Kangkung',
           'stok': 150,
           'kategori': 'Sayur',
           'deskripsi': 'Kangkung segar, cocok untuk ditumis.',
@@ -104,7 +113,6 @@ class ProdukProvider with ChangeNotifier {
 
       // Parsing data dummy menjadi List<Produk>
       _listProduk = dummyData.map((json) => Produk.fromJson(json)).toList();
-
     } catch (e) {
       // Jika terjadi error, simpan pesan error
       _error = e.toString();
@@ -129,9 +137,10 @@ class ProdukProvider with ChangeNotifier {
   }) async {
     _isLoading = true;
     notifyListeners();
-    
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulasi API call
-    
+
+    await Future.delayed(
+        const Duration(milliseconds: 500)); // Simulasi API call
+
     final produkBaru = Produk(
       id: DateTime.now().millisecondsSinceEpoch, // ID unik sementara
       nama: nama,
@@ -141,7 +150,7 @@ class ProdukProvider with ChangeNotifier {
       kategori: kategori,
       deskripsi: deskripsi,
     );
-    
+
     _listProduk.insert(0, produkBaru);
     _isLoading = false;
     notifyListeners();
@@ -161,8 +170,9 @@ class ProdukProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulasi API call
-    
+    await Future.delayed(
+        const Duration(milliseconds: 500)); // Simulasi API call
+
     final index = _listProduk.indexWhere((p) => p.id == id);
     if (index != -1) {
       final produkLama = _listProduk[index];
@@ -175,7 +185,7 @@ class ProdukProvider with ChangeNotifier {
         deskripsi: deskripsi ?? produkLama.deskripsi,
       );
     }
-    
+
     _isLoading = false;
     notifyListeners();
   }
@@ -186,21 +196,35 @@ class ProdukProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulasi API call
-    
+    await Future.delayed(
+        const Duration(milliseconds: 500)); // Simulasi API call
+
     _listProduk.removeWhere((p) => p.id == id);
-    
+
     _isLoading = false;
     notifyListeners();
   }
 
   /// Memperbarui jumlah stok produk berdasarkan ID.
-  /// Dipanggil oleh [AdminProvider].
-  Future<void> updateStock(int id, int stokBaru) async {
+  /// Jika `notify` false, tidak akan memanggil notifyListeners (digunakan saat batch update)
+  Future<void> updateStock(int id, int stokBaru, {bool notify = true}) async {
     final index = _listProduk.indexWhere((p) => p.id == id);
     if (index != -1) {
       _listProduk[index] = _listProduk[index].copyWith(stok: stokBaru);
-      notifyListeners();
+      if (notify) notifyListeners();
     }
+  }
+
+  /// Memperbarui banyak stok sekaligus, hanya memanggil notifyListeners sekali.
+  Future<void> updateStocks(Map<int, int> updates) async {
+    var changed = false;
+    for (final entry in updates.entries) {
+      final index = _listProduk.indexWhere((p) => p.id == entry.key);
+      if (index != -1) {
+        _listProduk[index] = _listProduk[index].copyWith(stok: entry.value);
+        changed = true;
+      }
+    }
+    if (changed) notifyListeners();
   }
 }

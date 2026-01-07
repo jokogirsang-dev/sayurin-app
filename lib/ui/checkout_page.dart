@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/pesanan_provider.dart';
+import '../providers/produk_provider.dart';
+import '../providers/user_provider.dart';
 import '../widget/custom_app_bar.dart';
+import 'edit_profile_page.dart';
+// import '../service/stripe_service.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -18,6 +22,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
   bool _loading = false;
 
   @override
+  void initState() {
+    super.initState();
+    final userProv = Provider.of<UserProvider>(context, listen: false);
+    _addrCtl.text = userProv.currentUser?.alamat ?? '';
+  }
+
+  @override
   void dispose() {
     _addrCtl.dispose();
     super.dispose();
@@ -26,25 +37,101 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Future<void> _placeOrder(BuildContext context) async {
     final cartProv = Provider.of<CartProvider>(context, listen: false);
     final pesananProv = Provider.of<PesananProvider>(context, listen: false);
-    
+    final userProv = Provider.of<UserProvider>(context, listen: false);
+    // final total = cartProv.getTotal();
+
+    // if (_payment == 'Stripe') {
+    //   final success = await StripeService.pay(
+    //     amount: total.toInt(), // rupiah
+    //   );
+
+    //   if (!success) {
+    //     if (mounted) {
+    //       ScaffoldMessenger.of(context).showSnackBar(
+    //         const SnackBar(content: Text('Pembayaran dibatalkan')),
+    //       );
+    //     }
+    //     setState(() => _loading = false);
+    //     return;
+    //   }
+    // }
+
     if (_addrCtl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Isi alamat pengiriman'))
-      );
-      return;
+      // Try to get alamat from profile
+      final profileAlamat = userProv.currentUser?.alamat ?? '';
+      if (profileAlamat.trim().isNotEmpty) {
+        setState(() => _addrCtl.text = profileAlamat);
+      } else {
+        final shouldEdit = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Alamat kosong'),
+            content: const Text(
+                'Alamat pengiriman belum tersedia. Ingin mengatur alamat sekarang?'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Batal')),
+              TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Atur Alamat')),
+            ],
+          ),
+        );
+        if (shouldEdit == true) {
+          await Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const EditProfilePage()));
+          final newAlamat = userProv.currentUser?.alamat ?? '';
+          if (newAlamat.trim().isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Isi alamat pengiriman')));
+
+            return;
+          } else {
+            setState(() => _addrCtl.text = newAlamat);
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Isi alamat pengiriman')));
+          return;
+        }
+      }
     }
 
-    setState(() => _loading = true);
     try {
       // Panggil tambahPesanan dengan items dari cart
       final items = cartProv.items;
       final total = cartProv.getTotal();
 
-      pesananProv.tambahPesanan(
-        userId: 1, // TODO: Ganti dengan userId dari sesi login
+      final userProv = Provider.of<UserProvider>(context, listen: false);
+      final uid = userProv.userId;
+      if (uid == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Silakan login untuk melakukan pemesanan')));
+        setState(() => _loading = false);
+        return;
+      }
+
+      await pesananProv.tambahPesanan(
+        userId: uid,
         items: items,
         totalHarga: total,
       );
+
+      // Kurangi stok produk sesuai item yang dibeli (batch update)
+      final produkProv = Provider.of<ProdukProvider>(context, listen: false);
+      final Map<int, int> updates = {};
+      for (final item in items) {
+        try {
+          final prod = produkProv.listProduk.firstWhere((p) => p.id == item.id);
+          final newStock = (prod.stok - item.jumlah).clamp(0, 100000);
+          updates[prod.id] =
+              newStock; // last write wins (items are unique in cart)
+        } catch (_) {
+          // ignore if product not found in list
+        }
+      }
+      if (updates.isNotEmpty) await produkProv.updateStocks(updates);
 
       // Clear cart setelah order berhasil
       cartProv.clear();
@@ -82,8 +169,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal membuat pesanan. Coba lagi.'))
-        );
+            const SnackBar(content: Text('Gagal membuat pesanan. Coba lagi.')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -202,7 +288,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               child: ElevatedButton(
                 onPressed: _loading ? null : () => _placeOrder(context),
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32)),
+                    backgroundColor: const Color.fromARGB(255, 255, 255, 255)),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: _loading
