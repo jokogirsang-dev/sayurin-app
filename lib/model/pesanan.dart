@@ -19,15 +19,13 @@ class Pesanan {
 
   factory Pesanan.fromJson(Map<String, dynamic> json) {
     return Pesanan(
-      id: json['id']??'',
-      userId: json['user_id'] ?? '',
+      id: json['id'] ?? 0,
+      userId: json['user_id'] ?? 0,
       totalHarga: (json['total_harga'] ?? 0).toDouble(),
       tanggal: DateTime.tryParse(json['tanggal'] ?? '') ?? DateTime.now(),
       status: json['status'] ?? 'UNKNOWN',
       items: (json['items'] is List)
-          ? (json['items'] as List)
-              .map((e) => PesananItem.fromJson(e))
-              .toList()
+          ? (json['items'] as List).map((e) => PesananItem.fromJson(e)).toList()
           : [],
     );
   }

@@ -108,28 +108,13 @@ class AdminProvider with ChangeNotifier {
   }
 
   // ================= GETTER HELPERS =================
-  
-  // Akses mudah ke produk list dari ProdukProvider.
-  // Getter ini mengubah List<dynamic> menjadi List<Produk> yang type-safe.
-  List<Produk> get produkList {
-    // Pengecekan `== null` tidak lagi diperlukan karena provider 
-    // menginisialisasi list sebagai list kosong `[]`.
-    return produkProvider.listProduk
-        .map((item) => Produk.fromJson(item as Map<String, dynamic>))
-        .toList();
-  }
-  
-  // Akses mudah ke pesanan list dari PesananProvider.
-  // Getter ini mengubah List<dynamic> menjadi List<Pesanan> yang type-safe.
-  List<Pesanan> get pesananList {
-    // Menggunakan getter 'semuaPesanan' dari PesananProvider yang sudah diperbaiki.
-    final dataPesanan = pesananProvider.semuaPesanan;
-    // Pengecekan `== null` juga tidak diperlukan di sini.
-    return dataPesanan
-        .map((item) => Pesanan.fromJson(item as Map<String, dynamic>))
-        .toList();
-  }
-  
+
+  // Akses langsung ke daftar produk ( sudah bertipe List<Produk> )
+  List<Produk> get produkList => produkProvider.listProduk;
+
+  // Akses langsung ke daftar pesanan ( sudah bertipe List<Pesanan> )
+  List<Pesanan> get pesananList => pesananProvider.semuaPesanan;
+
   // Getter untuk status loading dari masing-masing provider.
   bool get isProdukLoading => produkProvider.isLoading;
   bool get isPesananLoading => pesananProvider.isLoading;
