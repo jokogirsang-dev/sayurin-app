@@ -5,12 +5,14 @@ class User {
   final String name;
   final String email;
   final String role; // 'admin' atau 'user'
+  final String alamat;
 
   User({
     required this.id,
     required this.name,
     required this.email,
     required this.role,
+    this.alamat = '',
   });
 
   // Factory constructor dari JSON (jika pakai API)
@@ -20,6 +22,7 @@ class User {
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       role: json['role'] ?? 'user',
+      alamat: json['alamat'] ?? '',
     );
   }
 
@@ -30,7 +33,25 @@ class User {
       'name': name,
       'email': email,
       'role': role,
+      'alamat': alamat,
     };
+  }
+
+  // Create a copy with modified fields
+  User copyWith({
+    int? id,
+    String? name,
+    String? email,
+    String? role,
+    String? alamat,
+  }) {
+    return User(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      role: role ?? this.role,
+      alamat: alamat ?? this.alamat,
+    );
   }
 
   // Helper untuk check role

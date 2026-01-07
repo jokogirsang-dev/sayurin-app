@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/produk_provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/user_provider.dart';
 import '../model/produk.dart';
 import 'produk_page.dart';
 import 'produk_detail_page.dart';
@@ -328,59 +329,71 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildLocationHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Colors.white,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2E7D32).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+    final userProv = Provider.of<UserProvider>(context);
+    final alamat = userProv.currentUser?.alamat ?? '';
+    final displayAlamat = alamat.isNotEmpty ? alamat : 'Belum diatur';
+    final userName = userProv.currentUser?.name ?? 'User';
+
+    return InkWell(
+      onTap: () => Navigator.pushNamed(context, '/profil'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: Colors.white,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E7D32).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.location_on,
+                color: Color(0xFF2E7D32),
+                size: 18,
+              ),
             ),
-            child: const Icon(
-              Icons.location_on,
-              color: Color(0xFF2E7D32),
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Dikirim dari',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w500,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Alamat $userName',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    const Text(
-                      'Purba Dolok, Simalungun, Sumatera Utara',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF1B5E20),
-                        fontWeight: FontWeight.w700,
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          displayAlamat,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF1B5E20),
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 16,
-                      color: Color(0xFF1B5E20),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 16,
+                        color: Color(0xFF1B5E20),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -474,14 +487,16 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ProdukPage()),
+                  MaterialPageRoute(
+                      builder: (_) => ProdukPage(initialCategory: 'Sayur')),
                 );
               }),
               _buildFilterOption(Icons.restaurant, 'Bumbu & Rempah', () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ProdukPage()),
+                  MaterialPageRoute(
+                      builder: (_) => ProdukPage(initialCategory: 'Bumbu')),
                 );
               }),
               _buildFilterOption(Icons.local_fire_department, 'Promo Hari Ini',
@@ -628,7 +643,9 @@ class _HomePageState extends State<HomePage> {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
-                            foregroundColor: (banner['colors'] as List<Color>?)?.first ?? Colors.green,
+                            foregroundColor:
+                                (banner['colors'] as List<Color>?)?.first ??
+                                    Colors.green,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -684,21 +701,6 @@ class _HomePageState extends State<HomePage> {
         'icon': Icons.local_dining_rounded,
         'color': Color(0xFF43A047)
       },
-      {
-        'name': 'Andaliman',
-        'icon': Icons.grass_rounded,
-        'color': Color(0xFFFF8F00)
-      },
-      {
-        'name': 'Jeruk',
-        'icon': Icons.circle_rounded,
-        'color': Color(0xFFFF9800)
-      },
-      {
-        'name': 'Daun Kunyit',
-        'icon': Icons.nature_rounded,
-        'color': Color(0xFF66BB6A)
-      },
       {'name': 'Semua', 'icon': Icons.apps_rounded, 'color': Color(0xFF1B5E20)},
     ];
 
@@ -720,7 +722,9 @@ class _HomePageState extends State<HomePage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ProdukPage()),
+                MaterialPageRoute(
+                    builder: (_) =>
+                        ProdukPage(initialCategory: cat['name'] as String)),
               );
             },
             child: Column(

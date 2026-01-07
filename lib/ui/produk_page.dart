@@ -10,7 +10,8 @@ import '../providers/cart_provider.dart';
 import '../helpers/format_currency.dart';
 
 class ProdukPage extends StatefulWidget {
-  const ProdukPage({super.key});
+  final String? initialCategory;
+  const ProdukPage({super.key, this.initialCategory});
 
   @override
   State<ProdukPage> createState() => _ProdukPageState();
@@ -24,6 +25,14 @@ class _ProdukPageState extends State<ProdukPage> {
   void initState() {
     super.initState();
     _futureProduk = ProdukService().fetchProduk();
+    // If an initial category was passed, normalize it (capitalize first letter)
+    if (widget.initialCategory != null &&
+        widget.initialCategory!.trim().isNotEmpty) {
+      final c = widget.initialCategory!.trim();
+      selectedCategory = c.length == 1
+          ? c.toUpperCase()
+          : (c[0].toUpperCase() + c.substring(1).toLowerCase());
+    }
   }
 
   // Fungsi untuk mendapatkan satuan berdasarkan kategori/nama produk
@@ -251,10 +260,11 @@ class _ProdukPageState extends State<ProdukPage> {
                 }
 
                 List<Produk> data = snapshot.data ?? [];
-                // Filter berdasarkan kategori yang dipilih
-                if (selectedCategory != 'Semua') {
+                // Filter berdasarkan kategori yang dipilih (case-insensitive)
+                final sel = selectedCategory.trim().toLowerCase();
+                if (sel != 'semua') {
                   data = data
-                      .where((p) => p.kategori == selectedCategory)
+                      .where((p) => p.kategori.toLowerCase().contains(sel))
                       .toList();
                 }
 
@@ -301,7 +311,8 @@ class _ProdukPageState extends State<ProdukPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ProdukDetailPage(produkId: p.id),
+                            builder: (context) =>
+                                ProdukDetailPage(produkId: p.id),
                           ),
                         );
                       },
@@ -440,8 +451,7 @@ class _ProdukPageState extends State<ProdukPage> {
                                               ? const Color(0xFFFF6F00)
                                               : Colors.grey[700],
                                           behavior: SnackBarBehavior.floating,
-                                          duration:
-                                              const Duration(seconds: 1),
+                                          duration: const Duration(seconds: 1),
                                         ),
                                       );
                                     },

@@ -4,6 +4,7 @@ import '../providers/user_provider.dart';
 import '../model/user.dart';
 import '../widget/custom_app_bar.dart';
 import '../widget/custom_buttons.dart';
+import 'edit_profile_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -17,7 +18,7 @@ class ProfilePage extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: CustomAppBar(
         title: 'Profil Saya',
-        showBackButton: false,
+        showBackButton: true,
       ),
       body: user == null
           ? _buildNotLoggedIn(context)
@@ -245,6 +246,14 @@ class ProfilePage extends StatelessWidget {
             iconColor: const Color(0xFF2196F3),
           ),
           const SizedBox(height: 12),
+          _buildInfoCard(
+            icon: Icons.location_on_outlined,
+            label: 'Alamat',
+            value: user.alamat.isNotEmpty ? user.alamat : 'Belum diatur',
+            iconBgColor: const Color(0xFFFFF3E0),
+            iconColor: const Color(0xFFFF9800),
+          ),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -335,13 +344,17 @@ class ProfilePage extends StatelessWidget {
           _buildMenuOption(
             icon: Icons.person_outline_rounded,
             label: 'Edit Profil',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Fitur edit profil akan segera tersedia'),
-                  backgroundColor: Color(0xFF2E7D32),
-                ),
+            onTap: () async {
+              final updated = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EditProfilePage()),
               );
+              if (updated == true) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Profil diperbarui'),
+                  backgroundColor: Color.fromARGB(255, 255, 255, 255),
+                ));
+              }
             },
           ),
           const SizedBox(height: 8),
